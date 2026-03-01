@@ -1,0 +1,25 @@
+{
+  "name": "cmsc129_ao3dupe",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/delrosario-nina/CMSC129_AO3dupe.git"
+  },
+  "workspaces": [
+    "shared",
+    "server",
+    "client"
+  ],
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/delrosario-nina/CMSC129_AO3dupe/issues"
+  },
+  "homepage": "https://github.com/delrosario-nina/CMSC129_AO3dupe#readme"
+}
