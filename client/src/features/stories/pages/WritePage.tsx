@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 
 // --- Types ---
 interface WritingFormData {
@@ -25,7 +25,7 @@ const genres = [
   "Historical",
 ];
 
-const tags = [
+const AVAILABLE_TAGS = [
   "Male Protagonist",
   "Female Protagonist",
   "Magic",
@@ -94,16 +94,6 @@ const styles = {
     fontFamily: "inherit",
     resize: "vertical" as const,
   } as React.CSSProperties,
-  select: {
-    backgroundColor: "#1e1e1e",
-    border: "1px solid #2e2e2e",
-    borderRadius: "8px",
-    padding: "12px 14px",
-    fontSize: "14px",
-    color: "#e5e7eb",
-    outline: "none",
-    transition: "border-color 0.15s ease, box-shadow 0.15s ease",
-  } as React.CSSProperties,
   genreContainer: {
     display: "flex",
     flexWrap: "wrap" as const,
@@ -122,60 +112,6 @@ const styles = {
       cursor: "pointer",
       transition: "all 0.15s ease",
     }) as React.CSSProperties,
-  tagInputContainer: {
-    display: "flex",
-    gap: "8px",
-    marginTop: "12px",
-  } as React.CSSProperties,
-  tagInput: {
-    flex: 1,
-    backgroundColor: "#1e1e1e",
-    border: "1px solid #2e2e2e",
-    borderRadius: "8px",
-    padding: "12px 14px",
-    fontSize: "14px",
-    color: "#e5e7eb",
-    outline: "none",
-    transition: "border-color 0.15s ease, box-shadow 0.15s ease",
-  } as React.CSSProperties,
-  addTagButton: {
-    backgroundColor: "#2e2e2e",
-    border: "1px solid #383838",
-    borderRadius: "8px",
-    padding: "12px 14px",
-    color: "#9ca3af",
-    fontSize: "14px",
-    fontWeight: "600",
-    cursor: "pointer",
-    transition: "all 0.15s ease",
-  } as React.CSSProperties,
-  tagsList: {
-    display: "flex",
-    flexWrap: "wrap" as const,
-    gap: "8px",
-    marginTop: "12px",
-  } as React.CSSProperties,
-  tag: {
-    display: "inline-flex",
-    alignItems: "center",
-    gap: "6px",
-    padding: "6px 12px",
-    backgroundColor: "rgba(19, 38, 207, 0.05)",
-    border: "1px solid #FFFFFF",
-    borderRadius: "6px",
-    color: "#60a5fa",
-    fontSize: "13px",
-    fontWeight: "500",
-  } as React.CSSProperties,
-  removeTagButton: {
-    background: "none",
-    border: "none",
-    color: "#60a5fa",
-    cursor: "pointer",
-    fontSize: "16px",
-    padding: "0",
-    lineHeight: "1",
-  } as React.CSSProperties,
   submitButton: {
     backgroundColor: "#346eb6",
     color: "#ffffff",
@@ -188,11 +124,210 @@ const styles = {
     transition: "all 0.15s ease",
     marginTop: "8px",
   } as React.CSSProperties,
-  submitButtonHover: {
-    backgroundColor: "#60a5fa",
+  // Tag autocomplete
+  tagBadge: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "6px",
+    padding: "5px 12px",
+    borderRadius: "8px",
+    border: "1px solid #3071c1",
+    backgroundColor: "#1a2a3a",
+    color: "#60a5fa",
+    fontSize: "13px",
+    fontWeight: "500",
+  } as React.CSSProperties,
+  tagBadgeRemove: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    background: "none",
+    border: "none",
+    color: "#60a5fa",
+    cursor: "pointer",
+    padding: "0",
+    lineHeight: 1,
+    opacity: 0.7,
+    transition: "opacity 0.15s ease",
+    fontSize: "14px",
+  } as React.CSSProperties,
+  tagBadgesRow: {
+    display: "flex",
+    flexWrap: "wrap" as const,
+    gap: "8px",
+    marginBottom: "10px",
+  } as React.CSSProperties,
+  tagSearchInput: {
+    width: "100%",
+    backgroundColor: "#1e1e1e",
+    border: "1px solid #2e2e2e",
+    borderRadius: "8px",
+    padding: "12px 14px",
+    fontSize: "14px",
+    color: "#e5e7eb",
+    outline: "none",
+    boxSizing: "border-box" as const,
+    transition: "border-color 0.15s ease, box-shadow 0.15s ease",
+  } as React.CSSProperties,
+  autocompleteWrapper: {
+    position: "relative" as const,
+  } as React.CSSProperties,
+  dropdown: {
+    position: "absolute" as const,
+    top: "calc(100% + 4px)",
+    left: 0,
+    right: 0,
+    backgroundColor: "#1e1e1e",
+    border: "1px solid #333333",
+    borderRadius: "8px",
+    maxHeight: "200px",
+    overflowY: "auto" as const,
+    zIndex: 50,
+    boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
+  } as React.CSSProperties,
+  dropdownItem: {
+    width: "100%",
+    padding: "10px 14px",
+    textAlign: "left" as const,
+    backgroundColor: "transparent",
+    border: "none",
+    color: "#60a5fa",
+    fontSize: "13px",
+    cursor: "pointer",
+    display: "block",
+    transition: "background-color 0.1s ease",
   } as React.CSSProperties,
 };
 
+// --- TagAutocompleteInput ---
+const TagAutocompleteInput = ({
+  selectedTags,
+  onAdd,
+  onRemove,
+}: {
+  selectedTags: string[];
+  onAdd: (tag: string) => void;
+  onRemove: (tag: string) => void;
+}) => {
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  const suggestions = useMemo(() => {
+    if (!query.trim()) return [];
+    return AVAILABLE_TAGS.filter(
+      (t) =>
+        t.toLowerCase().includes(query.toLowerCase()) &&
+        !selectedTags.includes(t),
+    );
+  }, [query, selectedTags]);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (
+        wrapperRef.current &&
+        !wrapperRef.current.contains(e.target as Node)
+      ) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const handleSelect = (tag: string) => {
+    onAdd(tag);
+    setQuery("");
+    setOpen(false);
+  };
+
+  return (
+    <div style={{ marginTop: "12px" }}>
+      {/* Badges */}
+      {selectedTags.length > 0 && (
+        <div style={styles.tagBadgesRow}>
+          {selectedTags.map((tag) => (
+            <span key={tag} style={styles.tagBadge}>
+              {tag}
+              <button
+                type="button"
+                style={styles.tagBadgeRemove}
+                onClick={() => onRemove(tag)}
+                onMouseEnter={(e) =>
+                  ((e.currentTarget as HTMLButtonElement).style.opacity = "1")
+                }
+                onMouseLeave={(e) =>
+                  ((e.currentTarget as HTMLButtonElement).style.opacity = "0.7")
+                }
+              >
+                ×
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Input + dropdown */}
+      <div style={styles.autocompleteWrapper} ref={wrapperRef}>
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setOpen(true);
+          }}
+          onFocus={() => {
+            if (query) setOpen(true);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              if (suggestions.length > 0) handleSelect(suggestions[0]);
+            }
+            if (e.key === "Escape") setOpen(false);
+          }}
+          placeholder="Search tags..."
+          style={styles.tagSearchInput}
+          onFocusCapture={(e) => {
+            (e.currentTarget as HTMLInputElement).style.borderColor = "#FFFFFF";
+            (e.currentTarget as HTMLInputElement).style.boxShadow =
+              "0 0 0 2px rgba(19, 38, 207, 0.05)";
+          }}
+          onBlur={(e) => {
+            (e.currentTarget as HTMLInputElement).style.borderColor = "#2e2e2e";
+            (e.currentTarget as HTMLInputElement).style.boxShadow = "none";
+          }}
+        />
+        {open && suggestions.length > 0 && (
+          <div style={styles.dropdown}>
+            {suggestions.map((tag) => (
+              <button
+                key={tag}
+                type="button"
+                style={styles.dropdownItem}
+                onMouseDown={() => handleSelect(tag)}
+                onMouseEnter={(e) =>
+                  ((
+                    e.currentTarget as HTMLButtonElement
+                  ).style.backgroundColor = "#252525")
+                }
+                onMouseLeave={(e) =>
+                  ((
+                    e.currentTarget as HTMLButtonElement
+                  ).style.backgroundColor = "transparent")
+                }
+              >
+                {tag}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// --- Main Component ---
 export const WritePage = () => {
   const [formData, setFormData] = useState<WritingFormData>({
     title: "",
@@ -201,8 +336,6 @@ export const WritePage = () => {
     genres: [],
     tags: [],
   });
-
-  const [tagInput, setTagInput] = useState("");
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, title: e.target.value });
@@ -225,34 +358,22 @@ export const WritePage = () => {
     }));
   };
 
-  const handleAddTag = () => {
-    if (tagInput.trim() && !formData.tags.includes(tagInput.trim())) {
-      setFormData({
-        ...formData,
-        tags: [...formData.tags, tagInput.trim()],
-      });
-      setTagInput("");
+  const handleAddTag = (tag: string) => {
+    if (!formData.tags.includes(tag)) {
+      setFormData((prev) => ({ ...prev, tags: [...prev.tags, tag] }));
     }
   };
 
-  const handleRemoveTag = (index: number) => {
-    setFormData({
-      ...formData,
-      tags: formData.tags.filter((_, i) => i !== index),
-    });
-  };
-
-  const handleTagInputKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      handleAddTag();
-    }
+  const handleRemoveTag = (tag: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      tags: prev.tags.filter((t) => t !== tag),
+    }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     console.log("submit story", formData);
-    // call API later
   };
 
   return (
@@ -261,7 +382,7 @@ export const WritePage = () => {
         <h1 style={styles.pageTitle}>Write a New Story</h1>
 
         <form onSubmit={handleSubmit} style={styles.form}>
-          {/* Title Field */}
+          {/* Title */}
           <div style={styles.formGroup}>
             <label style={styles.label}>Story Title</label>
             <input
@@ -284,7 +405,7 @@ export const WritePage = () => {
             />
           </div>
 
-          {/* Synopsis Field */}
+          {/* Synopsis */}
           <div style={styles.formGroup}>
             <label style={styles.label}>Synopsis</label>
             <textarea
@@ -307,7 +428,7 @@ export const WritePage = () => {
             />
           </div>
 
-          {/* Genres Field */}
+          {/* Genres */}
           <div style={styles.formGroup}>
             <label style={styles.label}>Genres</label>
             <div style={styles.genreContainer}>
@@ -342,73 +463,17 @@ export const WritePage = () => {
             </div>
           </div>
 
-          {/* Tags Field */}
+          {/* Tags */}
           <div style={styles.formGroup}>
             <label style={styles.label}>Tags</label>
-            <div style={styles.tagInputContainer}>
-              <input
-                type="text"
-                value={tagInput}
-                onChange={(e) => setTagInput(e.target.value)}
-                onKeyPress={handleTagInputKeyPress}
-                placeholder="Add a tag and press Enter..."
-                style={styles.tagInput}
-                onFocus={(e) => {
-                  (e.currentTarget as HTMLInputElement).style.borderColor =
-                    "#FFFFFF";
-                  (e.currentTarget as HTMLInputElement).style.boxShadow =
-                    "0 0 0 2px rgba(19, 38, 207, 0.05)";
-                }}
-                onBlur={(e) => {
-                  (e.currentTarget as HTMLInputElement).style.borderColor =
-                    "#2e2e2e";
-                  (e.currentTarget as HTMLInputElement).style.boxShadow =
-                    "none";
-                }}
-              />
-              <button
-                type="button"
-                onClick={handleAddTag}
-                style={styles.addTagButton}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.borderColor =
-                    "#555555";
-                  (e.currentTarget as HTMLButtonElement).style.backgroundColor =
-                    "#383838";
-                  (e.currentTarget as HTMLButtonElement).style.color =
-                    "#d1d5db";
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.borderColor =
-                    "#383838";
-                  (e.currentTarget as HTMLButtonElement).style.backgroundColor =
-                    "#2e2e2e";
-                  (e.currentTarget as HTMLButtonElement).style.color =
-                    "#9ca3af";
-                }}
-              >
-                Add Tag
-              </button>
-            </div>
-            {formData.tags.length > 0 && (
-              <div style={styles.tagsList}>
-                {formData.tags.map((tag, index) => (
-                  <div key={index} style={styles.tag}>
-                    <span>{tag}</span>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveTag(index)}
-                      style={styles.removeTagButton}
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
+            <TagAutocompleteInput
+              selectedTags={formData.tags}
+              onAdd={handleAddTag}
+              onRemove={handleRemoveTag}
+            />
           </div>
 
-          {/* Content Field */}
+          {/* Content */}
           <div style={styles.formGroup}>
             <label style={styles.label}>Story Content</label>
             <textarea
@@ -431,13 +496,14 @@ export const WritePage = () => {
             />
           </div>
 
-          {/* Submit Button */}
+          {/* Submit */}
           <button
             type="submit"
             style={styles.submitButton}
-            onMouseEnter={(e) =>
-              Object.assign(e.currentTarget.style, styles.submitButtonHover)
-            }
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.backgroundColor =
+                "#60a5fa";
+            }}
             onMouseLeave={(e) => {
               (e.currentTarget as HTMLButtonElement).style.backgroundColor =
                 "#346eb6";

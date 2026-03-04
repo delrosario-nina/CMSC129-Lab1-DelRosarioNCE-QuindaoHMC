@@ -1,29 +1,12 @@
-export interface Story {
-  _id: string;
-  title: string;
-  author: string;
-  coverImage: string;
-  description: string;
-  genre: string;
-  reads: number;
-  votes: number;
-  chapters: number;
-  updateFrequency: string;
-  readers: number;
-  reviews: number;
-  publicationDate: string;
-  tags: string[];
-}
-
-export interface Novel {
+export interface OneShot {
   id: number;
   title: string;
-  chapters: number;
-  updateFrequency: string;
-  readers: number;
-  reviews: number;
-  lastUpdated: string;
+  author: string;
   genres: string[];
-  type: "Manga" | "Manhwa" | "Manhua" | "Novel";
+  tags: string[];
+  published: string;
+  lastUpdated: string;
+  words: number;
   synopsis: string;
+  content: string;
 }

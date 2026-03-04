@@ -1,27 +1,94 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { allWorks } from "../../features/stories/data/mockData";
+import type { OneShot } from "../../features/stories/types/types";
 
 export const Header = () => {
   const [showMenu, setShowMenu] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showDropdown, setShowDropdown] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
-  // close menu when clicking outside
+  // Close account menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setShowMenu(false);
       }
+      if (
+        searchRef.current &&
+        !searchRef.current.contains(event.target as Node)
+      ) {
+        setShowDropdown(false);
+      }
     };
 
-    if (showMenu) {
-      document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Autocomplete suggestions: match titles and authors only
+  const suggestions = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return [];
+
+    const results: {
+      id: number;
+      label: string;
+      sublabel: string;
+      type: "title" | "author";
+    }[] = [];
+
+    allWorks.forEach((work: OneShot) => {
+      if (work.title.toLowerCase().includes(q)) {
+        results.push({
+          id: work.id,
+          label: work.title,
+          sublabel: work.author,
+          type: "title",
+        });
+      }
+    });
+
+    const seenAuthors = new Set<string>();
+    allWorks.forEach((work: OneShot) => {
+      if (
+        work.author.toLowerCase().includes(q) &&
+        !seenAuthors.has(work.author)
+      ) {
+        seenAuthors.add(work.author);
+        results.push({
+          id: -1,
+          label: work.author,
+          sublabel: "Author",
+          type: "author",
+        });
+      }
+    });
+
+    return results.slice(0, 8);
+  }, [searchQuery]);
+
+  const handleSelect = (item: { id: number; label: string; type: string }) => {
+    setShowDropdown(false);
+    setSearchQuery("");
+    if (item.type === "title" && item.id !== -1) {
+      navigate(`/oneshot/${item.id}`);
+    } else if (item.type === "author" || item.type === "genre") {
+      navigate(`/browse?q=${encodeURIComponent(item.label)}`);
     }
+  };
 
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [showMenu]);
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && suggestions.length > 0) {
+      handleSelect(suggestions[0]);
+    }
+    if (e.key === "Escape") {
+      setShowDropdown(false);
+    }
+  };
 
   return (
     <header
@@ -65,8 +132,46 @@ export const Header = () => {
           AO3dupe
         </Link>
 
+        <Link
+          to="/"
+          style={{
+            fontSize: "12px",
+            fontWeight: "400",
+            color: "#ffffff",
+            textDecoration: "none",
+            letterSpacing: "0.15em",
+          }}
+          onMouseEnter={(e) =>
+            ((e.currentTarget as HTMLAnchorElement).style.color = "#60a5fa")
+          }
+          onMouseLeave={(e) =>
+            ((e.currentTarget as HTMLAnchorElement).style.color = "#ffffff")
+          }
+        >
+          Home
+        </Link>
+
+        <Link
+          to="/browse"
+          style={{
+            fontSize: "12px",
+            fontWeight: "400",
+            color: "#ffffff",
+            textDecoration: "none",
+            letterSpacing: "0.15em",
+          }}
+          onMouseEnter={(e) =>
+            ((e.currentTarget as HTMLAnchorElement).style.color = "#60a5fa")
+          }
+          onMouseLeave={(e) =>
+            ((e.currentTarget as HTMLAnchorElement).style.color = "#ffffff")
+          }
+        >
+          Browse
+        </Link>
+
         {/* Search Bar */}
-        <div style={{ flex: 1, maxWidth: "520px" }}>
+        <div style={{ flex: 1, maxWidth: "520px" }} ref={searchRef}>
           <div
             style={{
               position: "relative",
@@ -74,6 +179,7 @@ export const Header = () => {
               alignItems: "center",
             }}
           >
+            {/* Search icon */}
             <span
               style={{
                 position: "absolute",
@@ -84,8 +190,18 @@ export const Header = () => {
                 userSelect: "none",
               }}
             ></span>
+
             <input
               type="text"
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setShowDropdown(true);
+              }}
+              onFocus={() => {
+                if (searchQuery) setShowDropdown(true);
+              }}
+              onKeyDown={handleKeyDown}
               placeholder="Search titles, genres, authors..."
               style={{
                 width: "100%",
@@ -97,8 +213,9 @@ export const Header = () => {
                 color: "#e5e7eb",
                 outline: "none",
                 transition: "border-color 0.15s ease, box-shadow 0.15s ease",
+                boxSizing: "border-box",
               }}
-              onFocus={(e) => {
+              onFocusCapture={(e) => {
                 (e.currentTarget as HTMLInputElement).style.borderColor =
                   "#FFFFFFFF";
                 (e.currentTarget as HTMLInputElement).style.boxShadow =
@@ -110,10 +227,80 @@ export const Header = () => {
                 (e.currentTarget as HTMLInputElement).style.boxShadow = "none";
               }}
             />
+
+            {/* Dropdown */}
+            {showDropdown && suggestions.length > 0 && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: "calc(100% + 6px)",
+                  left: 0,
+                  right: 0,
+                  backgroundColor: "#1a1a1a",
+                  border: "1px solid #333333",
+                  borderRadius: "10px",
+                  boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
+                  zIndex: 1000,
+                  overflow: "hidden",
+                }}
+              >
+                {suggestions.map((item, i) => (
+                  <div
+                    key={`${item.type}-${item.label}-${i}`}
+                    onMouseDown={() => handleSelect(item)}
+                    style={{
+                      padding: "10px 16px",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: "12px",
+                      borderBottom:
+                        i < suggestions.length - 1
+                          ? "1px solid #222222"
+                          : "none",
+                      transition: "background-color 0.1s ease",
+                    }}
+                    onMouseEnter={(e) =>
+                      ((
+                        e.currentTarget as HTMLDivElement
+                      ).style.backgroundColor = "#252525")
+                    }
+                    onMouseLeave={(e) =>
+                      ((
+                        e.currentTarget as HTMLDivElement
+                      ).style.backgroundColor = "transparent")
+                    }
+                  >
+                    <span
+                      style={{
+                        fontSize: "13px",
+                        color: item.type === "title" ? "#60a5fa" : "#e5e7eb",
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      }}
+                    >
+                      {item.label}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: "11px",
+                        color: "#6b7280",
+                        flexShrink: 0,
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {item.sublabel}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Login Button */}
+        {/* Account Icon */}
         <div style={{ position: "relative" }} ref={menuRef}>
           <span
             className="material-symbols-outlined"
@@ -153,11 +340,7 @@ export const Header = () => {
                 zIndex: 1000,
               }}
             >
-              <div
-                style={{
-                  padding: "12px 0",
-                }}
-              >
+              <div style={{ padding: "12px 0" }}>
                 {[
                   { label: "Written works", path: "/dashboard" },
                   { label: "Library", path: "/dashboard" },
@@ -166,9 +349,7 @@ export const Header = () => {
                   <div
                     key={item.label}
                     onClick={() => {
-                      if (item.path !== "#") {
-                        navigate(item.path);
-                      }
+                      if (item.path !== "#") navigate(item.path);
                       setShowMenu(false);
                     }}
                     style={{
