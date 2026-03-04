@@ -265,7 +265,7 @@ const OneShotCard = ({
       <span style={styles.title}>{oneshot.title}</span>
 
       <div style={styles.stats}>
-        <span>[📅] {oneshot.lastUpdated}</span>
+        <span> {oneshot.lastUpdated}</span>
       </div>
 
       <div style={styles.genres}>

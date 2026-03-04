@@ -114,9 +114,9 @@ const styles = {
     ({
       padding: "8px 14px",
       borderRadius: "6px",
-      border: isSelected ? "1px solid #FF00DD" : "1px solid #383838",
-      backgroundColor: isSelected ? "rgba(255, 0, 221, 0.1)" : "#252525",
-      color: isSelected ? "#FF00DD" : "#d1d5db",
+      border: isSelected ? "1px solid #FFFFFF" : "1px solid #383838",
+      backgroundColor: isSelected ? "rgba(19, 38, 207, 0.05)" : "#252525",
+      color: isSelected ? "#60a5fa" : "#d1d5db",
       fontSize: "13px",
       fontWeight: "500",
       cursor: "pointer",
@@ -160,24 +160,24 @@ const styles = {
     alignItems: "center",
     gap: "6px",
     padding: "6px 12px",
-    backgroundColor: "rgba(255, 0, 221, 0.1)",
-    border: "1px solid #FF00DD",
+    backgroundColor: "rgba(19, 38, 207, 0.05)",
+    border: "1px solid #FFFFFF",
     borderRadius: "6px",
-    color: "#FF00DD",
+    color: "#60a5fa",
     fontSize: "13px",
     fontWeight: "500",
   } as React.CSSProperties,
   removeTagButton: {
     background: "none",
     border: "none",
-    color: "#FF00DD",
+    color: "#60a5fa",
     cursor: "pointer",
     fontSize: "16px",
     padding: "0",
     lineHeight: "1",
   } as React.CSSProperties,
   submitButton: {
-    backgroundColor: "#FF00DD",
+    backgroundColor: "#346eb6",
     color: "#ffffff",
     border: "none",
     padding: "12px 24px",
@@ -189,7 +189,7 @@ const styles = {
     marginTop: "8px",
   } as React.CSSProperties,
   submitButtonHover: {
-    backgroundColor: "#E600C7",
+    backgroundColor: "#60a5fa",
   } as React.CSSProperties,
 };
 
@@ -272,9 +272,9 @@ export const WritePage = () => {
               style={styles.input}
               onFocus={(e) => {
                 (e.currentTarget as HTMLInputElement).style.borderColor =
-                  "#FF00DD";
+                  "#FFFFFF";
                 (e.currentTarget as HTMLInputElement).style.boxShadow =
-                  "0 0 0 2px rgba(255,0,221,0.15)";
+                  "0 0 0 2px rgba(19, 38, 207, 0.05)";
               }}
               onBlur={(e) => {
                 (e.currentTarget as HTMLInputElement).style.borderColor =
@@ -294,9 +294,9 @@ export const WritePage = () => {
               style={{ ...styles.textarea, minHeight: "100px" }}
               onFocus={(e) => {
                 (e.currentTarget as HTMLTextAreaElement).style.borderColor =
-                  "#FF00DD";
+                  "#FFFFFF";
                 (e.currentTarget as HTMLTextAreaElement).style.boxShadow =
-                  "0 0 0 2px rgba(255,0,221,0.15)";
+                  "0 0 0 2px rgba(19, 38, 207, 0.05)";
               }}
               onBlur={(e) => {
                 (e.currentTarget as HTMLTextAreaElement).style.borderColor =
@@ -355,9 +355,9 @@ export const WritePage = () => {
                 style={styles.tagInput}
                 onFocus={(e) => {
                   (e.currentTarget as HTMLInputElement).style.borderColor =
-                    "#FF00DD";
+                    "#FFFFFF";
                   (e.currentTarget as HTMLInputElement).style.boxShadow =
-                    "0 0 0 2px rgba(255,0,221,0.15)";
+                    "0 0 0 2px rgba(19, 38, 207, 0.05)";
                 }}
                 onBlur={(e) => {
                   (e.currentTarget as HTMLInputElement).style.borderColor =
@@ -418,9 +418,9 @@ export const WritePage = () => {
               style={{ ...styles.textarea, minHeight: "400px" }}
               onFocus={(e) => {
                 (e.currentTarget as HTMLTextAreaElement).style.borderColor =
-                  "#FF00DD";
+                  "#FFFFFF";
                 (e.currentTarget as HTMLTextAreaElement).style.boxShadow =
-                  "0 0 0 2px rgba(255,0,221,0.15)";
+                  "0 0 0 2px rgba(19, 38, 207, 0.05)";
               }}
               onBlur={(e) => {
                 (e.currentTarget as HTMLTextAreaElement).style.borderColor =
@@ -440,7 +440,7 @@ export const WritePage = () => {
             }
             onMouseLeave={(e) => {
               (e.currentTarget as HTMLButtonElement).style.backgroundColor =
-                "#FF00DD";
+                "#346eb6";
             }}
           >
             Save & Publish

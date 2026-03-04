@@ -72,7 +72,7 @@ const styles = {
   } as React.CSSProperties,
   tabContainer: {
     display: "flex",
-    gap: "8px",
+    gap: "0",
     borderBottom: "1px solid #222222",
     paddingBottom: "0",
   } as React.CSSProperties,
@@ -80,25 +80,29 @@ const styles = {
     padding: "12px 24px",
     backgroundColor: "transparent",
     border: "none",
+    borderBottom: "2px solid transparent",
     color: "#6b7280",
     fontSize: "14px",
     fontWeight: "600",
     cursor: "pointer",
-    transition: "all 0.15s ease",
-    borderBottom: "2px solid transparent",
+    transition: "color 0.15s ease, border-color 0.15s ease",
     marginBottom: "-1px",
+    borderRadius: "0",
+    outline: "none",
   } as React.CSSProperties,
   tabActive: {
     padding: "12px 24px",
     backgroundColor: "transparent",
     border: "none",
-    color: "#FF00DD",
+    borderBottom: "2px solid #60a5fa",
+    color: "#60a5fa",
     fontSize: "14px",
     fontWeight: "600",
     cursor: "pointer",
-    transition: "all 0.15s ease",
-    borderBottom: "2px solid #FF00DD",
+    transition: "color 0.15s ease, border-color 0.15s ease",
     marginBottom: "-1px",
+    borderRadius: "0",
+    outline: "none",
   } as React.CSSProperties,
   contentArea: {
     marginTop: "32px",
@@ -124,7 +128,7 @@ const styles = {
     marginBottom: "24px",
   } as React.CSSProperties,
   addButton: {
-    backgroundColor: "#FF00DD",
+    backgroundColor: "#60a5fa",
     color: "#ffffff",
     border: "none",
     padding: "10px 24px",
@@ -135,7 +139,7 @@ const styles = {
     transition: "all 0.15s ease",
   } as React.CSSProperties,
   addButtonHover: {
-    backgroundColor: "#E600C7",
+    backgroundColor: "#82baff",
   } as React.CSSProperties,
   headerWithButton: {
     display: "flex",
@@ -260,8 +264,8 @@ const OneShotCard = ({
       <span style={styles.title}>{oneshot.title}</span>
 
       <div style={styles.stats}>
-        <span>[📅] {oneshot.lastUpdated}</span>
-        <span>[📝] {oneshot.words.toLocaleString()} words</span>
+        <span> Last Updated: {oneshot.lastUpdated}</span>
+        <span> Words: {oneshot.words.toLocaleString()}</span>
       </div>
 
       <div style={styles.genres}>
@@ -293,7 +297,7 @@ const EmptyState = ({
   onAddClick?: () => void;
 }) => (
   <div style={styles.emptyState}>
-    <div style={styles.emptyStateIcon}>📚</div>
+    <div style={styles.emptyStateIcon}></div>
     <h3 style={styles.emptyStateTitle}>{title}</h3>
     <p style={styles.emptyStateText}>{message}</p>
     {showButton && (
@@ -305,7 +309,7 @@ const EmptyState = ({
         }
         onMouseLeave={(e) => {
           (e.currentTarget as HTMLButtonElement).style.backgroundColor =
-            "#FF00DD";
+            "#3071c1";
         }}
       >
         + Add Work
@@ -384,7 +388,7 @@ export const DashboardPage = () => {
                 }
               }}
             >
-              Works
+              Written Works
             </button>
             <button
               style={activeTab === "library" ? styles.tabActive : styles.tab}
@@ -402,7 +406,7 @@ export const DashboardPage = () => {
                 }
               }}
             >
-              Bookmarked
+              Library
             </button>
           </div>
         </div>
@@ -412,7 +416,7 @@ export const DashboardPage = () => {
           {activeTab === "works" && (
             <>
               <div style={styles.headerWithButton}>
-                <h2 style={styles.sectionTitle}>Your Works</h2>
+                <h2 style={styles.sectionTitle}>Your Written Works</h2>
                 <button
                   style={styles.addButton}
                   onClick={handleAddWork}
@@ -422,7 +426,7 @@ export const DashboardPage = () => {
                   onMouseLeave={(e) => {
                     (
                       e.currentTarget as HTMLButtonElement
-                    ).style.backgroundColor = "#FF00DD";
+                    ).style.backgroundColor = "#346eb6";
                   }}
                 >
                   + Add Work

@@ -6,7 +6,7 @@ export const Header = () => {
   const menuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
-  // Close menu when clicking outside
+  // close menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
@@ -56,7 +56,7 @@ export const Header = () => {
             flexShrink: 0,
           }}
           onMouseEnter={(e) =>
-            ((e.currentTarget as HTMLAnchorElement).style.color = "#FF00DD")
+            ((e.currentTarget as HTMLAnchorElement).style.color = "#60a5fa")
           }
           onMouseLeave={(e) =>
             ((e.currentTarget as HTMLAnchorElement).style.color = "#ffffff")
@@ -100,9 +100,9 @@ export const Header = () => {
               }}
               onFocus={(e) => {
                 (e.currentTarget as HTMLInputElement).style.borderColor =
-                  "#FF00DD";
+                  "#FFFFFFFF";
                 (e.currentTarget as HTMLInputElement).style.boxShadow =
-                  "0 0 0 2px rgba(255,0,221,0.15)";
+                  "0 0 0 2px rgba(0, 68, 255, 0.15)";
               }}
               onBlur={(e) => {
                 (e.currentTarget as HTMLInputElement).style.borderColor =
@@ -126,7 +126,7 @@ export const Header = () => {
             }}
             onClick={() => setShowMenu(!showMenu)}
             onMouseEnter={(e) =>
-              ((e.currentTarget as HTMLSpanElement).style.color = "#FF00DD")
+              ((e.currentTarget as HTMLSpanElement).style.color = "#60a5fa")
             }
             onMouseLeave={(e) => {
               if (!showMenu) {
@@ -159,8 +159,8 @@ export const Header = () => {
                 }}
               >
                 {[
-                  { label: "Dashboard", path: "/dashboard" },
-                  { label: "Library", path: "/library" },
+                  { label: "Written works", path: "/dashboard" },
+                  { label: "Library", path: "/dashboard" },
                   { label: "Settings", path: "#" },
                 ].map((item) => (
                   <div
@@ -183,7 +183,7 @@ export const Header = () => {
                         e.currentTarget as HTMLDivElement
                       ).style.backgroundColor = "#2a2a2a";
                       (e.currentTarget as HTMLDivElement).style.color =
-                        "#FF00DD";
+                        "#60a5fa";
                     }}
                     onMouseLeave={(e) => {
                       (
