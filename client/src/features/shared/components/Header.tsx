@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { allWorks } from "../../features/stories/data/mockData";
-import type { OneShot } from "../../features/stories/types/types";
+// import { allWorks } from "../../features/stories/data/mockData"; // removed mock data
 
 export const Header = () => {
   const [showMenu, setShowMenu] = useState(false);
@@ -29,54 +28,25 @@ export const Header = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Autocomplete suggestions: match titles and authors only
-  const suggestions = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-    if (!q) return [];
+  // Autocomplete suggestions: currently disabled until API search is implemented
+  type Suggestion = {
+    _id: string;
+    label: string;
+    sublabel: string;
+    type: "title" | "author";
+  };
 
-    const results: {
-      id: number;
-      label: string;
-      sublabel: string;
-      type: "title" | "author";
-    }[] = [];
-
-    allWorks.forEach((work: OneShot) => {
-      if (work.title.toLowerCase().includes(q)) {
-        results.push({
-          id: work.id,
-          label: work.title,
-          sublabel: work.author,
-          type: "title",
-        });
-      }
-    });
-
-    const seenAuthors = new Set<string>();
-    allWorks.forEach((work: OneShot) => {
-      if (
-        work.author.toLowerCase().includes(q) &&
-        !seenAuthors.has(work.author)
-      ) {
-        seenAuthors.add(work.author);
-        results.push({
-          id: -1,
-          label: work.author,
-          sublabel: "Author",
-          type: "author",
-        });
-      }
-    });
-
-    return results.slice(0, 8);
+  const suggestions: Suggestion[] = useMemo(() => {
+    // would normally query server here
+    return [];
   }, [searchQuery]);
 
-  const handleSelect = (item: { id: number; label: string; type: string }) => {
+  const handleSelect = (item: { _id: string; label: string; type: string }) => {
     setShowDropdown(false);
     setSearchQuery("");
-    if (item.type === "title" && item.id !== -1) {
-      navigate(`/oneshot/${item.id}`);
-    } else if (item.type === "author" || item.type === "genre") {
+    if (item.type === "title" && item._id) {
+      navigate(`/oneshot/${item._id}`);
+    } else if (item.type === "author") {
       navigate(`/browse?q=${encodeURIComponent(item.label)}`);
     }
   };

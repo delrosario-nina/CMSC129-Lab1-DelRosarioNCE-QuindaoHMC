@@ -1,5 +1,5 @@
 export interface OneShot {
-  id: number;
+  _id: string;
   title: string;
   author: string;
   genres: string[];
@@ -9,4 +9,12 @@ export interface OneShot {
   words: number;
   synopsis: string;
   content: string;
+}
+
+export interface WritingFormData {
+  title: string;
+  synopsis: string;
+  content: string;
+  genres: string[];
+  tags: string[];
 }

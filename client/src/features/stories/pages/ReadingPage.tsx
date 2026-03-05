@@ -1,71 +1,8 @@
 import { useParams } from "react-router-dom";
-
-// --- Mock Novel Data (replace with real API fetch using id) ---
-const mockNovels: Record<
-  string,
-  {
-    id: number;
-    title: string;
-    author: string;
-    genres: string[];
-    tags: string[];
-    published: string;
-    lastUpdated: string;
-    words: number;
-    synopsis: string;
-    content: string;
-  }
-> = {
-  "1": {
-    id: 1,
-    title: "The Stellar Swordmaster",
-    author: "StarForgedAuthor",
-    genres: ["Action", "Fantasy", "Manhwa"],
-    tags: [
-      "Reincarnation",
-      "Martial Arts",
-      "Adventure",
-      "Power Fantasy",
-      "Magic System",
-    ],
-    published: "2024-01-15",
-    lastUpdated: "02-28-2026",
-    words: 184320,
-    synopsis:
-      "A legendary swordmaster reincarnates and rises through the ranks of a world governed by magic and steel. Armed with the memories of a thousand battles and a will that cannot be broken, Kael Dravin must claw his way back to the top — but this time, the stakes are far greater than glory.",
-    content: `Chapter 1: The Second Dawn
-
-The sword fell.
-
-It always fell the same way — a clean arc, the kind only a master could execute, splitting the air with a whisper before finding its mark. Kael had seen it a thousand times. Had done it a thousand times.
-
-And then the darkness.
-
-He expected nothing after. The great swordmasters of old spoke of an endless void, a silence so complete it became its own kind of peace. What he did not expect was the cold — biting, furious cold — and the sound of a woman screaming somewhere nearby.
-
-He opened his eyes.
-
-The ceiling above him was wood, rough-hewn and waterlogged. A child's ceiling. He raised his hand and found it small, trembling, the hand of someone who had never once held a blade.
-
-Kael Dravin, the Stellar Swordmaster, the man who had felled three warlords before the age of forty, lay in the body of a boy no older than ten — and began to laugh.
-
-It was not a kind laugh. It was the laugh of a man who had seen too much to be surprised by anything, and yet here he was: surprised.
-
-"You're awake!" A girl's face appeared above him, round-cheeked and wide-eyed, her hair the color of straw. "Mother said you wouldn't wake up. She said the fever took you."
-
-"The fever," Kael repeated. His voice came out thin and reedy. He hated it immediately.
-
-"Yes. You were very sick." She tilted her head. "You sound different."
-
-"I feel different." He sat up slowly, testing the body's limits. Weak. Undertrained. Lungs too small. But the bones were good — light and dense, the kind that responded well to conditioning. He had worked with worse.
-
-He swung his legs over the side of the bed and stood.
-
-The girl stared.
-
-"Where," Kael said, "is the nearest place I can find a sword?"`,
-  },
-};
+import { useState, useEffect } from "react";
+import { apiClient } from "../../../api/client";
+import { AddToLibraryButton } from "../../dashboard/library/components/AddToLibraryButton";
+import type { OneShot } from "../types/types";
 
 // --- Styles ---
 const s = {
@@ -245,13 +182,49 @@ const MetaRow = ({
 // --- Main Page ---
 export const ReadingPage = () => {
   const { id } = useParams<{ id: string }>();
-  const novel = id ? mockNovels[id] : null;
+  const [story, setStory] = useState<OneShot | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  if (!novel) {
+  useEffect(() => {
+    if (!id) {
+      setError("Story ID not found");
+      setLoading(false);
+      return;
+    }
+
+    const fetchStory = async () => {
+      try {
+        setLoading(true);
+        const response = await apiClient.get(`/stories/${id}`);
+        setStory(response.data);
+        setError(null);
+      } catch (err: any) {
+        setError(err.response?.data?.message || "Failed to load story");
+        console.error("Error fetching story:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStory();
+  }, [id]);
+
+  if (loading) {
     return (
       <div style={s.page}>
         <div style={s.inner}>
-          <p style={{ color: "#6b7280" }}>Novel not found.</p>
+          <p style={{ color: "#6b7280" }}>Loading story...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !story) {
+    return (
+      <div style={s.page}>
+        <div style={s.inner}>
+          <p style={{ color: "#ef5350" }}>{error || "Story not found."}</p>
         </div>
       </div>
     );
@@ -261,25 +234,30 @@ export const ReadingPage = () => {
     <div style={s.page}>
       <div style={s.inner}>
         {/* Title & Author */}
-        <h1 style={s.title}>{novel.title}</h1>
+        <h1 style={s.title}>{story.title}</h1>
         <p style={s.author}>
-          by <span style={s.authorLink}>{novel.author}</span>
+          by <span style={s.authorLink}>{story.author}</span>
         </p>
+
+        {/* Add to Library Button */}
+        <div style={{ marginBottom: "24px" }}>
+          <AddToLibraryButton storyId={story._id} />
+        </div>
 
         {/* Metadata Box */}
         <div style={s.metaBox}>
           <MetaRow label="Genres">
-            {novel.genres.map((g) => (
+            {story.genres.map((g) => (
               <span key={g} style={s.GenreBadge}>
                 {g}
               </span>
             ))}
           </MetaRow>
           <MetaRow label="Additional Tags">
-            {novel.tags.map((t, i) => (
+            {story.tags.map((t, i) => (
               <span key={t}>
                 <span style={s.metaLink}>{t}</span>
-                {i < novel.tags.length - 1 && (
+                {i < story.tags.length - 1 && (
                   <span style={{ color: "#4b5563" }}>,</span>
                 )}
               </span>
@@ -287,23 +265,25 @@ export const ReadingPage = () => {
           </MetaRow>
           <MetaRow label="Stats" isLast>
             <div style={s.metaStatRow}>
-              <span>Published: {novel.published}</span>
-              <span>Updated: {novel.lastUpdated}</span>
-              <span>Words: {novel.words.toLocaleString()}</span>
+              <span>Published: {story.published}</span>
+              <span>Updated: {story.lastUpdated}</span>
+              <span>Words: {story.words.toLocaleString()}</span>
             </div>
           </MetaRow>
         </div>
 
         {/* Synopsis */}
-        <div style={s.synopsisBox}>
-          <span style={s.synopsisLabel}>Summary:</span>
-          <p style={s.synopsisText}>{novel.synopsis}</p>
-        </div>
+        {story.synopsis && (
+          <div style={s.synopsisBox}>
+            <span style={s.synopsisLabel}>Summary:</span>
+            <p style={s.synopsisText}>{story.synopsis}</p>
+          </div>
+        )}
 
         {/* Content */}
         <div style={s.contentBox}>
           <span style={s.contentLabel}>Chapter Content:</span>
-          <p style={s.contentText}>{novel.content}</p>
+          <p style={s.contentText}>{story.content}</p>
         </div>
       </div>
     </div>

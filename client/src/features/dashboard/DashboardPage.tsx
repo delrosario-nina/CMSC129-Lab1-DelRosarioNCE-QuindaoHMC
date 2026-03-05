@@ -1,12 +1,9 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import type { OneShot } from "../stories/types/types";
-import { userBookmarkedStories, userOwnWorks } from "../stories/data/mockData";
+import { apiClient } from "../../api/client";
 import { OneShotCard } from "../stories/components/StoryCard";
 
-// --- Styles --- // (remaining style object defined below)
-
-// --- Styles ---
 const styles = {
   page: {
     backgroundColor: "#111111",
@@ -18,9 +15,7 @@ const styles = {
     margin: "0 auto",
     padding: "40px 40px",
   } as React.CSSProperties,
-  header: {
-    marginBottom: "32px",
-  } as React.CSSProperties,
+  header: { marginBottom: "32px" } as React.CSSProperties,
   pageTitle: {
     fontSize: "32px",
     fontWeight: "800",
@@ -31,7 +26,6 @@ const styles = {
     display: "flex",
     gap: "0",
     borderBottom: "1px solid #222222",
-    paddingBottom: "0",
   } as React.CSSProperties,
   tab: {
     padding: "12px 24px",
@@ -61,17 +55,11 @@ const styles = {
     borderRadius: "0",
     outline: "none",
   } as React.CSSProperties,
-  contentArea: {
-    marginTop: "32px",
-  } as React.CSSProperties,
+  contentArea: { marginTop: "32px" } as React.CSSProperties,
   emptyState: {
     textAlign: "center" as const,
     padding: "60px 40px",
     color: "#6b7280",
-  } as React.CSSProperties,
-  emptyStateIcon: {
-    fontSize: "48px",
-    marginBottom: "16px",
   } as React.CSSProperties,
   emptyStateTitle: {
     fontSize: "18px",
@@ -94,9 +82,6 @@ const styles = {
     fontWeight: "600",
     cursor: "pointer",
     transition: "all 0.15s ease",
-  } as React.CSSProperties,
-  addButtonHover: {
-    backgroundColor: "#82baff",
   } as React.CSSProperties,
   headerWithButton: {
     display: "flex",
@@ -130,7 +115,6 @@ const EmptyState = ({
   onAddClick?: () => void;
 }) => (
   <div style={styles.emptyState}>
-    <div style={styles.emptyStateIcon}></div>
     <h3 style={styles.emptyStateTitle}>{title}</h3>
     <p style={styles.emptyStateText}>{message}</p>
     {showButton && (
@@ -138,12 +122,13 @@ const EmptyState = ({
         style={styles.addButton}
         onClick={onAddClick}
         onMouseEnter={(e) =>
-          Object.assign(e.currentTarget.style, styles.addButtonHover)
+          ((e.currentTarget as HTMLButtonElement).style.backgroundColor =
+            "#82baff")
         }
-        onMouseLeave={(e) => {
-          (e.currentTarget as HTMLButtonElement).style.backgroundColor =
-            "#3071c1";
-        }}
+        onMouseLeave={(e) =>
+          ((e.currentTarget as HTMLButtonElement).style.backgroundColor =
+            "#60a5fa")
+        }
       >
         + Add Work
       </button>
@@ -151,92 +136,128 @@ const EmptyState = ({
   </div>
 );
 
-const ContentList = ({
-  items,
-  emptyTitle,
-  emptyMessage,
-  showAddButton,
-  onAddClick,
-}: {
-  items: OneShot[];
-  emptyTitle: string;
-  emptyMessage: string;
-  showAddButton?: boolean;
-  onAddClick?: () => void;
-}) => {
-  if (items.length === 0) {
-    return (
-      <EmptyState
-        title={emptyTitle}
-        message={emptyMessage}
-        showButton={showAddButton}
-        onAddClick={onAddClick}
-      />
-    );
-  }
-
-  return (
-    <div style={styles.cardContainer}>
-      {items.map((item, i) => (
-        <OneShotCard
-          key={item.id}
-          oneshot={item}
-          isLast={i === items.length - 1}
-        />
-      ))}
-    </div>
-  );
-};
-
-// --- Main Component ---
 export const DashboardPage = () => {
   const [activeTab, setActiveTab] = useState<"works" | "library">("works");
-  const navigate = useNavigate();
 
-  const handleAddWork = () => {
-    navigate("/write");
+  interface LibraryEntry {
+    _id: string;
+    storyId: OneShot;
+  }
+
+  const [userWorks, setUserWorks] = useState<OneShot[]>([]);
+  const [libraryEntries, setLibraryEntries] = useState<LibraryEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const currentAuthor = localStorage.getItem("currentAuthor") || "Anonymous";
+
+  useEffect(() => {
+    setActiveTab(location.pathname.endsWith("/library") ? "library" : "works");
+  }, [location.pathname]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const resp = await apiClient.get("/stories");
+        const data = resp.data;
+        const stories: OneShot[] = Array.isArray(data)
+          ? data
+          : (data.stories ?? data.data ?? data.works ?? []);
+        setUserWorks(stories.filter((s) => s.author === currentAuthor));
+
+        try {
+          const libResp = await apiClient.get("/libraries");
+          const libs: LibraryEntry[] = Array.isArray(libResp.data)
+            ? libResp.data
+            : (libResp.data.libraries ?? libResp.data.data ?? []);
+          setLibraryEntries(libs);
+        } catch {
+          setLibraryEntries([]);
+        }
+
+        setError(null);
+      } catch (err: any) {
+        setError(err.response?.data?.message || "Failed to load dashboard");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [currentAuthor]);
+
+  const handleDeleteStory = async (storyId: string) => {
+    if (!window.confirm("Are you sure you want to delete this story?")) return;
+    try {
+      await apiClient.delete(`/stories/${storyId}`);
+      setUserWorks((prev) => prev.filter((s) => s._id !== storyId));
+    } catch (err: any) {
+      alert(err.response?.data?.message || "Failed to delete story");
+    }
   };
+
+  const handleDeleteFromLibrary = async (libId: string) => {
+    if (!window.confirm("Remove this story from your library?")) return;
+    try {
+      await apiClient.delete(`/libraries/${libId}`);
+      setLibraryEntries((prev) => prev.filter((e) => e._id !== libId));
+    } catch (err: any) {
+      alert(err.response?.data?.message || "Failed to remove");
+    }
+  };
+
+  if (loading)
+    return (
+      <div style={styles.page}>
+        <div style={styles.inner}>
+          <p style={{ color: "#6b7280" }}>Loading dashboard…</p>
+        </div>
+      </div>
+    );
+  if (error)
+    return (
+      <div style={styles.page}>
+        <div style={styles.inner}>
+          <p style={{ color: "#ef5350" }}>{error}</p>
+        </div>
+      </div>
+    );
 
   return (
     <div style={styles.page}>
       <div style={styles.inner}>
         <div style={styles.header}>
           <h1 style={styles.pageTitle}>Dashboard</h1>
-
-          {/* Tabs */}
           <div style={styles.tabContainer}>
             <button
               style={activeTab === "works" ? styles.tabActive : styles.tab}
-              onClick={() => setActiveTab("works")}
+              onClick={() => navigate("/dashboard/written-works")}
               onMouseEnter={(e) => {
-                if (activeTab !== "works") {
+                if (activeTab !== "works")
                   (e.currentTarget as HTMLButtonElement).style.color =
                     "#9ca3af";
-                }
               }}
               onMouseLeave={(e) => {
-                if (activeTab !== "works") {
+                if (activeTab !== "works")
                   (e.currentTarget as HTMLButtonElement).style.color =
                     "#6b7280";
-                }
               }}
             >
               Written Works
             </button>
             <button
               style={activeTab === "library" ? styles.tabActive : styles.tab}
-              onClick={() => setActiveTab("library")}
+              onClick={() => navigate("/dashboard/library")}
               onMouseEnter={(e) => {
-                if (activeTab !== "library") {
+                if (activeTab !== "library")
                   (e.currentTarget as HTMLButtonElement).style.color =
                     "#9ca3af";
-                }
               }}
               onMouseLeave={(e) => {
-                if (activeTab !== "library") {
+                if (activeTab !== "library")
                   (e.currentTarget as HTMLButtonElement).style.color =
                     "#6b7280";
-                }
               }}
             >
               Library
@@ -244,7 +265,6 @@ export const DashboardPage = () => {
           </div>
         </div>
 
-        {/* Content */}
         <div style={styles.contentArea}>
           {activeTab === "works" && (
             <>
@@ -252,38 +272,65 @@ export const DashboardPage = () => {
                 <h2 style={styles.sectionTitle}>Your Written Works</h2>
                 <button
                   style={styles.addButton}
-                  onClick={handleAddWork}
+                  onClick={() => navigate("/write")}
                   onMouseEnter={(e) =>
-                    Object.assign(e.currentTarget.style, styles.addButtonHover)
-                  }
-                  onMouseLeave={(e) => {
-                    (
+                    ((
                       e.currentTarget as HTMLButtonElement
-                    ).style.backgroundColor = "#346eb6";
-                  }}
+                    ).style.backgroundColor = "#82baff")
+                  }
+                  onMouseLeave={(e) =>
+                    ((
+                      e.currentTarget as HTMLButtonElement
+                    ).style.backgroundColor = "#60a5fa")
+                  }
                 >
                   + Add Work
                 </button>
               </div>
-              <ContentList
-                items={userOwnWorks}
-                emptyTitle="No works yet"
-                emptyMessage="Start creating your first story to display it here."
-                showAddButton={true}
-                onAddClick={handleAddWork}
-              />
+              {userWorks.length === 0 ? (
+                <EmptyState
+                  title="No works yet"
+                  message="Start creating your first story to display it here."
+                  showButton
+                  onAddClick={() => navigate("/write")}
+                />
+              ) : (
+                <div style={styles.cardContainer}>
+                  {userWorks.map((item, i) => (
+                    <OneShotCard
+                      key={item._id}
+                      oneshot={item}
+                      isLast={i === userWorks.length - 1}
+                      onRemove={() => handleDeleteStory(item._id)}
+                    />
+                  ))}
+                </div>
+              )}
             </>
           )}
 
           {activeTab === "library" && (
             <>
-              <h2 style={styles.sectionTitle}>Bookmarked Stories</h2>
-              <ContentList
-                items={userBookmarkedStories}
-                emptyTitle="No bookmarked stories"
-                emptyMessage="Bookmark stories you love to find them here later."
-                showAddButton={false}
-              />
+              <h2 style={{ ...styles.sectionTitle, marginBottom: "24px" }}>
+                Bookmarked Stories
+              </h2>
+              {libraryEntries.length === 0 ? (
+                <EmptyState
+                  title="No bookmarked stories"
+                  message="Bookmark stories you love to find them here later."
+                />
+              ) : (
+                <div style={styles.cardContainer}>
+                  {libraryEntries.map((entry, i) => (
+                    <OneShotCard
+                      key={entry._id}
+                      oneshot={entry.storyId}
+                      isLast={i === libraryEntries.length - 1}
+                      onRemove={() => handleDeleteFromLibrary(entry._id)}
+                    />
+                  ))}
+                </div>
+              )}
             </>
           )}
         </div>

@@ -1,49 +1,11 @@
-import { Link, useNavigate } from "react-router-dom";
-import type { OneShot } from "../types/types";
-import { AddToLibraryButton } from "../../dashboard/library/components/AddToLibraryButton";
+import { useNavigate } from "react-router-dom";
+import { MdOutlineDelete } from "react-icons/md";
 
 interface Props {
-  story: OneShot;
+  oneshot: any;
 }
 
-// --- Styles ---
 const styles = {
-  page: {
-    backgroundColor: "#111111",
-    minHeight: "100vh",
-    color: "#ffffff",
-  } as React.CSSProperties,
-  inner: {
-    maxWidth: "900px",
-    margin: "0 auto",
-    padding: "40px 40px",
-  } as React.CSSProperties,
-  section: {
-    marginBottom: "48px",
-  } as React.CSSProperties,
-  sectionHeader: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: "16px",
-  } as React.CSSProperties,
-  sectionTitle: {
-    fontSize: "18px",
-    fontWeight: "700",
-    color: "#ffffff",
-    margin: 0,
-  } as React.CSSProperties,
-  seeMore: {
-    fontSize: "14px",
-    color: "#6b7280",
-    textDecoration: "none",
-  } as React.CSSProperties,
-  cardContainer: {
-    backgroundColor: "#161616",
-    border: "1px solid #222222",
-    borderRadius: "12px",
-    overflow: "hidden",
-  } as React.CSSProperties,
   card: {
     padding: "16px 20px",
     borderBottom: "1px solid #222222",
@@ -114,9 +76,24 @@ const styles = {
     WebkitBoxOrient: "vertical" as const,
     overflow: "hidden",
   } as React.CSSProperties,
+  deleteButton: {
+    position: "absolute" as const,
+    top: "12px",
+    right: "12px",
+    background: "none",
+    border: "none",
+    color: "#4b5563",
+    cursor: "pointer",
+    padding: "4px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: "4px",
+    transition: "color 0.15s ease, background-color 0.15s ease",
+    zIndex: 1,
+  } as React.CSSProperties,
 };
 
-// badge helpers
 const GenreBadge = ({ genre }: { genre: string }) => (
   <span style={styles.GenreBadge}>{genre}</span>
 );
@@ -125,59 +102,50 @@ const TagBadge = ({ tag }: { tag: string }) => (
   <span style={styles.TagBadge}>{tag}</span>
 );
 
-export const StoryCard = ({ story }: Props) => {
+export const StoryCard = ({ oneshot }: Props) => {
   return (
-    <Link to={`/story/${story.id}`} className="block">
-      <div className="border border-gray-300 rounded p-4 hover:shadow-md transition-shadow bg-gray-50">
-        {/* Title */}
-        <h2 className="text-lg font-bold text-gray-900 mb-2 hover:text-blue-600">
-          {story.title}
-        </h2>
-
-        {/* Metadata: chapters, update frequency, readers, reviews, date */}
-        <div className="flex flex-wrap gap-4 text-xs text-gray-600 mb-3">
-          <div>{story.published}</div>
-        </div>
-
-        {/* Tags */}
-        <div className="flex flex-wrap gap-2 mb-3">
-          {story.tags.map((tag) => (
-            <span
-              key={tag}
-              className="inline-block bg-blue-600 text-white text-xs font-semibold px-2 py-1 rounded"
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
-
-        {/* Description */}
-        <p className="text-gray-700 text-sm line-clamp-3 mb-3">
-          {story.synopsis}
-        </p>
-
-        {/* Add to Library Button */}
-        <div onClick={(e) => e.preventDefault()}>
-          <AddToLibraryButton storyId={story.id.toString()} />
-        </div>
+    <div className="border border-gray-300 rounded p-4 hover:shadow-md transition-shadow bg-gray-50">
+      <h2 className="text-lg font-bold text-gray-900 mb-2 hover:text-blue-600">
+        {oneshot.title}
+      </h2>
+      <div className="flex flex-wrap gap-4 text-xs text-gray-600 mb-3">
+        <div>{oneshot.published}</div>
       </div>
-    </Link>
+      <div className="flex flex-wrap gap-2 mb-3">
+        {oneshot.tags.map((tag: string) => (
+          <span
+            key={tag}
+            className="inline-block bg-blue-600 text-white text-xs font-semibold px-2 py-1 rounded"
+          >
+            {tag}
+          </span>
+        ))}
+      </div>
+    </div>
   );
 };
 
 export const OneShotCard = ({
   oneshot,
   isLast,
+  onRemove,
 }: {
-  oneshot: OneShot;
+  oneshot: any;
   isLast: boolean;
+  onRemove?: () => void;
 }) => {
   const navigate = useNavigate();
+  const readPath = oneshot._id
+    ? `/reading/${oneshot._id}`
+    : `/novel/${oneshot.id}`;
 
   return (
     <div
-      style={isLast ? styles.cardLast : styles.card}
-      onClick={() => navigate(`/novel/${oneshot.id}`)}
+      style={{
+        ...(isLast ? styles.cardLast : styles.card),
+        position: "relative",
+      }}
+      onClick={() => navigate(readPath)}
       onMouseEnter={(e) =>
         ((e.currentTarget as HTMLDivElement).style.backgroundColor = "#1a1a1a")
       }
@@ -186,20 +154,43 @@ export const OneShotCard = ({
           "transparent")
       }
     >
+      {onRemove && (
+        <button
+          style={styles.deleteButton}
+          onClick={(e) => {
+            e.stopPropagation();
+            onRemove();
+          }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.color = "#ef4444";
+            (e.currentTarget as HTMLButtonElement).style.backgroundColor =
+              "#2a1a1a";
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.color = "#4b5563";
+            (e.currentTarget as HTMLButtonElement).style.backgroundColor =
+              "transparent";
+          }}
+          title="Remove"
+        >
+          <MdOutlineDelete size={18} />
+        </button>
+      )}
+
       <span style={styles.title}>{oneshot.title}</span>
 
       <div style={styles.stats}>
-        <span> {oneshot.lastUpdated}</span>
+        <span>{oneshot.lastUpdated}</span>
       </div>
 
       <div style={styles.genres}>
-        {oneshot.genres.map((g) => (
+        {oneshot.genres.map((g: string) => (
           <GenreBadge key={g} genre={g} />
         ))}
       </div>
 
       <div style={styles.tags}>
-        {oneshot.tags.map((t) => (
+        {oneshot.tags.map((t: string) => (
           <TagBadge key={t} tag={t} />
         ))}
       </div>

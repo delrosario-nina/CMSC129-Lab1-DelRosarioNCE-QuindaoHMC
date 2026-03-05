@@ -12,7 +12,8 @@ import {
   HiX,
 } from "react-icons/hi";
 import { OneShotCard } from "../components/StoryCard";
-import { allWorks } from "../data/mockData";
+import { apiClient } from "../../../api/client";
+import type { OneShot } from "../types/types";
 
 type SortField = "title" | "recently-updated";
 type SortOrder = "asc" | "desc";
@@ -405,6 +406,9 @@ const TagAutocompleteInput = ({
 };
 
 export const BroswingPage = () => {
+  const [allWorks, setAllWorks] = useState<OneShot[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [sortField, setSortField] = useState<SortField>("recently-updated");
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
   const [currentPage, setCurrentPage] = useState(1);
@@ -415,13 +419,36 @@ export const BroswingPage = () => {
   const [tagFilterMode, setTagFilterMode] = useState<TagFilterMode>("OR");
   const [includeTags, setIncludeTags] = useState<string[]>([]);
   const [excludeTags, setExcludeTags] = useState<string[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
+
+  // Fetch stories from API
+  useEffect(() => {
+    const fetchStories = async () => {
+      try {
+        setLoading(true);
+        const response = await apiClient.get("/stories");
+        // API might return an array directly, or wrap it in an object
+        const data = response.data;
+        const stories = Array.isArray(data)
+          ? data
+          : (data.stories ?? data.data ?? data.works ?? []);
+        setAllWorks(stories);
+        setError(null);
+      } catch (err: any) {
+        setError(err.response?.data?.message || "Failed to load stories");
+        console.error("Error fetching stories:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStories();
+  }, []);
 
   const allTags = useMemo(() => {
     const tags = new Set<string>();
     allWorks.forEach((work) => work.tags.forEach((tag) => tags.add(tag)));
     return Array.from(tags).sort();
-  }, []);
+  }, [allWorks]);
 
   const handleGenreChange = (genre: string) => {
     const newGenres = new Set(selectedGenres);
@@ -440,12 +467,6 @@ export const BroswingPage = () => {
 
   const sortedStories = useMemo(() => {
     let sorted = [...allWorks];
-
-    if (searchQuery.trim()) {
-      sorted = sorted.filter((s) =>
-        s.title.toLowerCase().includes(searchQuery.toLowerCase()),
-      );
-    }
 
     if (selectedGenres.size > 0) {
       sorted = sorted.filter((story) => {
@@ -493,9 +514,9 @@ export const BroswingPage = () => {
 
     return sorted;
   }, [
+    allWorks,
     sortField,
     sortOrder,
-    searchQuery,
     selectedGenres,
     genreFilterMode,
     includeTags,
@@ -513,254 +534,281 @@ export const BroswingPage = () => {
   return (
     <div style={styles.page}>
       <div style={styles.inner}>
-        {/* Header */}
-        <div style={styles.headerControls}>
-          <h1 style={styles.sectionTitle}>Browse All Works</h1>
-          <div style={styles.controlsRight}>
-            <select
-              value={sortField}
-              onChange={(e) => {
-                setSortField(e.target.value as SortField);
-                setCurrentPage(1);
-              }}
-              style={{
-                ...styles.headerButton,
-                appearance: "none",
-                paddingRight: "24px",
-              }}
-            >
-              <option value="recently-updated">Recently Updated</option>
-              <option value="title">Title</option>
-            </select>
-            <button
-              onClick={() => {
-                setSortOrder("asc");
-                setCurrentPage(1);
-              }}
-              style={{
-                ...styles.headerButton,
-                ...(sortOrder === "asc" ? styles.headerButtonActive : {}),
-              }}
-            >
-              <HiArrowNarrowUp />
-            </button>
-            <button
-              onClick={() => {
-                setSortOrder("desc");
-                setCurrentPage(1);
-              }}
-              style={{
-                ...styles.headerButton,
-                ...(sortOrder === "desc" ? styles.headerButtonActive : {}),
-              }}
-            >
-              <HiArrowNarrowDown />
-            </button>
+        {loading && (
+          <div style={{ ...styles.emptyState, padding: "60px 20px" }}>
+            <p style={{ color: "#6b7280" }}>Loading stories...</p>
           </div>
-        </div>
+        )}
 
-        {/* Filter Accordion */}
-        <Accordion
-          expanded={isFiltersExpanded}
-          onChange={() => setIsFiltersExpanded(!isFiltersExpanded)}
-          style={styles.filterSection}
-        >
-          <AccordionSummary
-            expandIcon={
-              isFiltersExpanded ? (
-                <HiChevronUp style={{ color: "#9ca3af" }} />
-              ) : (
-                <HiChevronDown style={{ color: "#9ca3af" }} />
-              )
-            }
-          >
-            <h2 style={styles.filterHeaderTitle}>Filters</h2>
-          </AccordionSummary>
-          <AccordionDetails style={styles.filterContent}>
-            {/* Genre Filter */}
-            <div style={styles.filterGroup}>
-              <div style={styles.filterGroupTitle}>
-                Genre [
+        {error && (
+          <div style={{ ...styles.emptyState, padding: "60px 20px" }}>
+            <p style={{ color: "#ef5350" }}>{error}</p>
+          </div>
+        )}
+
+        {!loading && !error && allWorks.length === 0 && (
+          <div style={{ ...styles.emptyState, padding: "60px 20px" }}>
+            <p style={{ color: "#6b7280" }}>No stories found.</p>
+          </div>
+        )}
+
+        {!loading && !error && allWorks.length > 0 && (
+          <>
+            {/* Header */}
+            <div style={styles.headerControls}>
+              <h1 style={styles.sectionTitle}>Browse All Works</h1>
+              <div style={styles.controlsRight}>
                 <select
-                  value={genreFilterMode}
-                  onChange={(e) =>
-                    setGenreFilterMode(e.target.value as GenreFilterMode)
-                  }
+                  value={sortField}
+                  onChange={(e) => {
+                    setSortField(e.target.value as SortField);
+                    setCurrentPage(1);
+                  }}
                   style={{
-                    backgroundColor: "#1a1a1a",
-                    border: "1px solid #333333",
-                    borderRadius: "4px",
-                    color: "#e5e7eb",
-                    padding: "2px 4px",
-                    fontSize: "12px",
-                    cursor: "pointer",
+                    ...styles.headerButton,
+                    appearance: "none",
+                    paddingRight: "24px",
                   }}
                 >
-                  <option value="AND">AND</option>
-                  <option value="OR">OR</option>
+                  <option value="recently-updated">Recently Updated</option>
+                  <option value="title">Title</option>
                 </select>
-                ]
+                <button
+                  onClick={() => {
+                    setSortOrder("asc");
+                    setCurrentPage(1);
+                  }}
+                  style={{
+                    ...styles.headerButton,
+                    ...(sortOrder === "asc" ? styles.headerButtonActive : {}),
+                  }}
+                >
+                  <HiArrowNarrowUp />
+                </button>
+                <button
+                  onClick={() => {
+                    setSortOrder("desc");
+                    setCurrentPage(1);
+                  }}
+                  style={{
+                    ...styles.headerButton,
+                    ...(sortOrder === "desc" ? styles.headerButtonActive : {}),
+                  }}
+                >
+                  <HiArrowNarrowDown />
+                </button>
               </div>
-              <div style={styles.genreGrid}>
-                {GENRES.map((genre) => (
-                  <label key={genre} style={styles.genreCheckbox}>
-                    <input
-                      type="checkbox"
-                      checked={selectedGenres.has(genre)}
-                      onChange={() => handleGenreChange(genre)}
-                      style={styles.checkbox}
+            </div>
+
+            {/* Filter Accordion */}
+            <Accordion
+              expanded={isFiltersExpanded}
+              onChange={() => setIsFiltersExpanded(!isFiltersExpanded)}
+              style={styles.filterSection}
+            >
+              <AccordionSummary
+                expandIcon={
+                  isFiltersExpanded ? (
+                    <HiChevronUp style={{ color: "#9ca3af" }} />
+                  ) : (
+                    <HiChevronDown style={{ color: "#9ca3af" }} />
+                  )
+                }
+              >
+                <h2 style={styles.filterHeaderTitle}>Filters</h2>
+              </AccordionSummary>
+              <AccordionDetails style={styles.filterContent}>
+                {/* Genre Filter */}
+                <div style={styles.filterGroup}>
+                  <div style={styles.filterGroupTitle}>
+                    Genre [
+                    <select
+                      value={genreFilterMode}
+                      onChange={(e) =>
+                        setGenreFilterMode(e.target.value as GenreFilterMode)
+                      }
+                      style={{
+                        backgroundColor: "#1a1a1a",
+                        border: "1px solid #333333",
+                        borderRadius: "4px",
+                        color: "#e5e7eb",
+                        padding: "2px 4px",
+                        fontSize: "12px",
+                        cursor: "pointer",
+                      }}
+                    >
+                      <option value="AND">AND</option>
+                      <option value="OR">OR</option>
+                    </select>
+                    ]
+                  </div>
+                  <div style={styles.genreGrid}>
+                    {GENRES.map((genre) => (
+                      <label key={genre} style={styles.genreCheckbox}>
+                        <input
+                          type="checkbox"
+                          checked={selectedGenres.has(genre)}
+                          onChange={() => handleGenreChange(genre)}
+                          style={styles.checkbox}
+                        />
+                        <span style={styles.genreLabel}>{genre}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Tag Filter */}
+                <div style={styles.filterGroup}>
+                  <div style={styles.filterGroupTitle}>
+                    Tags [
+                    <select
+                      value={tagFilterMode}
+                      onChange={(e) =>
+                        setTagFilterMode(e.target.value as TagFilterMode)
+                      }
+                      style={{
+                        backgroundColor: "#1a1a1a",
+                        border: "1px solid #333333",
+                        borderRadius: "4px",
+                        color: "#e5e7eb",
+                        padding: "2px 4px",
+                        fontSize: "12px",
+                        cursor: "pointer",
+                      }}
+                    >
+                      <option value="AND">AND</option>
+                      <option value="OR">OR</option>
+                    </select>
+                    ]
+                  </div>
+
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr",
+                      gap: "16px",
+                    }}
+                  >
+                    <TagAutocompleteInput
+                      label="Include..."
+                      tags={includeTags}
+                      allTags={allTags}
+                      onAdd={(tag) => {
+                        setIncludeTags((prev) => [...prev, tag]);
+                        setCurrentPage(1);
+                      }}
+                      onRemove={(tag) => {
+                        setIncludeTags((prev) => prev.filter((t) => t !== tag));
+                      }}
+                      placeholder="Search tags to include..."
                     />
-                    <span style={styles.genreLabel}>{genre}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
+                    <TagAutocompleteInput
+                      label="Exclude..."
+                      tags={excludeTags}
+                      allTags={allTags}
+                      onAdd={(tag) => {
+                        setExcludeTags((prev) => [...prev, tag]);
+                        setCurrentPage(1);
+                      }}
+                      onRemove={(tag) => {
+                        setExcludeTags((prev) => prev.filter((t) => t !== tag));
+                      }}
+                      placeholder="Search tags to exclude..."
+                    />
+                  </div>
+                </div>
 
-            {/* Tag Filter */}
-            <div style={styles.filterGroup}>
-              <div style={styles.filterGroupTitle}>
-                Tags [
-                <select
-                  value={tagFilterMode}
-                  onChange={(e) =>
-                    setTagFilterMode(e.target.value as TagFilterMode)
-                  }
+                {/* Filter Buttons */}
+                <div style={styles.filterButtonsContainer}>
+                  <button
+                    onClick={() => setCurrentPage(1)}
+                    style={styles.applyButton}
+                    onMouseEnter={(e) =>
+                      ((
+                        e.currentTarget as HTMLButtonElement
+                      ).style.backgroundColor = "#3b82f6")
+                    }
+                    onMouseLeave={(e) =>
+                      ((
+                        e.currentTarget as HTMLButtonElement
+                      ).style.backgroundColor = "#60a5fa")
+                    }
+                  >
+                    Search
+                  </button>
+                  <button
+                    onClick={handleResetFilters}
+                    style={styles.resetButton}
+                    onMouseEnter={(e) => {
+                      (
+                        e.currentTarget as HTMLButtonElement
+                      ).style.backgroundColor = "#252525";
+                      (e.currentTarget as HTMLButtonElement).style.borderColor =
+                        "#444444";
+                    }}
+                    onMouseLeave={(e) => {
+                      (
+                        e.currentTarget as HTMLButtonElement
+                      ).style.backgroundColor = "#1a1a1a";
+                      (e.currentTarget as HTMLButtonElement).style.borderColor =
+                        "#333333";
+                    }}
+                  >
+                    Reset
+                  </button>
+                </div>
+              </AccordionDetails>
+            </Accordion>
+
+            {/* Stories */}
+            <section style={styles.section}>
+              <div style={styles.cardContainer}>
+                {displayedStories.length === 0 ? (
+                  <div style={styles.emptyState}>No stories found</div>
+                ) : (
+                  displayedStories.map((oneshot: any, i) => (
+                    <OneShotCard
+                      key={oneshot._id || `oneshot-${i}`}
+                      oneshot={oneshot}
+                      isLast={i === displayedStories.length - 1}
+                    />
+                  ))
+                )}
+              </div>
+            </section>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <section style={{ ...styles.section, marginBottom: "0" }}>
+                <div
                   style={{
-                    backgroundColor: "#1a1a1a",
-                    border: "1px solid #333333",
-                    borderRadius: "4px",
-                    color: "#e5e7eb",
-                    padding: "2px 4px",
-                    fontSize: "12px",
-                    cursor: "pointer",
+                    ...styles.cardContainer,
+                    ...styles.paginationContainer,
                   }}
                 >
-                  <option value="AND">AND</option>
-                  <option value="OR">OR</option>
-                </select>
-                ]
-              </div>
-
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  gap: "16px",
-                }}
-              >
-                <TagAutocompleteInput
-                  label="Include..."
-                  tags={includeTags}
-                  allTags={allTags}
-                  onAdd={(tag) => {
-                    setIncludeTags((prev) => [...prev, tag]);
-                    setCurrentPage(1);
-                  }}
-                  onRemove={(tag) => {
-                    setIncludeTags((prev) => prev.filter((t) => t !== tag));
-                  }}
-                  placeholder="Search tags to include..."
-                />
-                <TagAutocompleteInput
-                  label="Exclude..."
-                  tags={excludeTags}
-                  allTags={allTags}
-                  onAdd={(tag) => {
-                    setExcludeTags((prev) => [...prev, tag]);
-                    setCurrentPage(1);
-                  }}
-                  onRemove={(tag) => {
-                    setExcludeTags((prev) => prev.filter((t) => t !== tag));
-                  }}
-                  placeholder="Search tags to exclude..."
-                />
-              </div>
-            </div>
-
-            {/* Filter Buttons */}
-            <div style={styles.filterButtonsContainer}>
-              <button
-                onClick={() => setCurrentPage(1)}
-                style={styles.applyButton}
-                onMouseEnter={(e) =>
-                  ((
-                    e.currentTarget as HTMLButtonElement
-                  ).style.backgroundColor = "#3b82f6")
-                }
-                onMouseLeave={(e) =>
-                  ((
-                    e.currentTarget as HTMLButtonElement
-                  ).style.backgroundColor = "#60a5fa")
-                }
-              >
-                Search
-              </button>
-              <button
-                onClick={handleResetFilters}
-                style={styles.resetButton}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.backgroundColor =
-                    "#252525";
-                  (e.currentTarget as HTMLButtonElement).style.borderColor =
-                    "#444444";
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.backgroundColor =
-                    "#1a1a1a";
-                  (e.currentTarget as HTMLButtonElement).style.borderColor =
-                    "#333333";
-                }}
-              >
-                Reset
-              </button>
-            </div>
-          </AccordionDetails>
-        </Accordion>
-
-        {/* Stories */}
-        <section style={styles.section}>
-          <div style={styles.cardContainer}>
-            {displayedStories.length === 0 ? (
-              <div style={styles.emptyState}>No stories found</div>
-            ) : (
-              displayedStories.map((oneshot, i) => (
-                <OneShotCard
-                  key={oneshot.id}
-                  oneshot={oneshot}
-                  isLast={i === displayedStories.length - 1}
-                />
-              ))
+                  <Pagination
+                    count={totalPages}
+                    page={currentPage}
+                    onChange={(_e, page) => {
+                      setCurrentPage(page);
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                    }}
+                    shape="rounded"
+                  />
+                  <Pagination
+                    count={totalPages}
+                    page={currentPage}
+                    onChange={(_e, page) => {
+                      setCurrentPage(page);
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                    }}
+                    variant="outlined"
+                    shape="rounded"
+                  />
+                </div>
+              </section>
             )}
-          </div>
-        </section>
-
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <section style={{ ...styles.section, marginBottom: "0" }}>
-            <div
-              style={{ ...styles.cardContainer, ...styles.paginationContainer }}
-            >
-              <Pagination
-                count={totalPages}
-                page={currentPage}
-                onChange={(_e, page) => {
-                  setCurrentPage(page);
-                  window.scrollTo({ top: 0, behavior: "smooth" });
-                }}
-                shape="rounded"
-              />
-              <Pagination
-                count={totalPages}
-                page={currentPage}
-                onChange={(_e, page) => {
-                  setCurrentPage(page);
-                  window.scrollTo({ top: 0, behavior: "smooth" });
-                }}
-                variant="outlined"
-                shape="rounded"
-              />
-            </div>
-          </section>
+          </>
         )}
       </div>
     </div>

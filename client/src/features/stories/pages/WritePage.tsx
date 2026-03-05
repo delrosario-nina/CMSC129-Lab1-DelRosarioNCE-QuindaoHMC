@@ -1,13 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from "react";
-
-// --- Types ---
-interface WritingFormData {
-  title: string;
-  synopsis: string;
-  content: string;
-  genres: string[];
-  tags: string[];
-}
+import { useNavigate } from "react-router-dom";
+import { apiClient } from "../../../api/client";
+import type { WritingFormData } from "../types/types";
 
 // --- Available Genres ---
 const genres = [
@@ -37,6 +31,34 @@ const AVAILABLE_TAGS = [
   "Space Opera",
   "Time Travel",
   "Omegaverse",
+  "Fluff",
+  "Angst",
+  "Hurt/Comfort",
+  "Slow Burn",
+  "Friends to Lovers",
+  "Enemies to Lovers",
+  "Forbidden Love",
+  "Love Triangle",
+  "Obsessive Romance",
+  "Tragic Romance",
+  "Dark Fantasy",
+  "Urban Fantasy",
+  "High Fantasy",
+  "Low Fantasy",
+  "Dystopian",
+  "Utopian",
+  "Steampunk",
+  "Historical Fiction",
+  "Alternate History",
+  "Mythology",
+  "Fairy Tale Retelling",
+  "Superhero",
+  "Villain Protagonist",
+  "Anti-Hero",
+  "Non-Human Protagonist",
+  "Multiple POV",
+  "Epistolary",
+  "Meta",
 ];
 
 // --- Styles ---
@@ -329,6 +351,7 @@ const TagAutocompleteInput = ({
 
 // --- Main Component ---
 export const WritePage = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState<WritingFormData>({
     title: "",
     synopsis: "",
@@ -336,6 +359,8 @@ export const WritePage = () => {
     genres: [],
     tags: [],
   });
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, title: e.target.value });
@@ -371,15 +396,61 @@ export const WritePage = () => {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("submit story", formData);
+    setError(null);
+
+    // Validation
+    if (!formData.title.trim()) {
+      setError("Story title is required");
+      return;
+    }
+    if (!formData.content.trim()) {
+      setError("Story content is required");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const author = localStorage.getItem("currentAuthor") || "Anonymous";
+      const response = await apiClient.post("/stories", {
+        title: formData.title,
+        author,
+        synopsis: formData.synopsis,
+        content: formData.content,
+        genres: formData.genres,
+        tags: formData.tags,
+      });
+
+      // Redirect to reading page after successful publish
+      navigate(`/reading/${response.data._id}`);
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Failed to publish story");
+      console.error("Error publishing story:", err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
     <div style={styles.page}>
       <div style={styles.inner}>
         <h1 style={styles.pageTitle}>Write a New Story</h1>
+
+        {error && (
+          <div
+            style={{
+              backgroundColor: "#7f1d1d",
+              color: "#fecaca",
+              padding: "12px 16px",
+              borderRadius: "8px",
+              marginBottom: "16px",
+              fontSize: "14px",
+            }}
+          >
+            {error}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} style={styles.form}>
           {/* Title */}
@@ -499,17 +570,26 @@ export const WritePage = () => {
           {/* Submit */}
           <button
             type="submit"
-            style={styles.submitButton}
+            disabled={isLoading}
+            style={{
+              ...styles.submitButton,
+              opacity: isLoading ? 0.6 : 1,
+              cursor: isLoading ? "not-allowed" : "pointer",
+            }}
             onMouseEnter={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.backgroundColor =
-                "#60a5fa";
+              if (!isLoading) {
+                (e.currentTarget as HTMLButtonElement).style.backgroundColor =
+                  "#60a5fa";
+              }
             }}
             onMouseLeave={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.backgroundColor =
-                "#346eb6";
+              if (!isLoading) {
+                (e.currentTarget as HTMLButtonElement).style.backgroundColor =
+                  "#346eb6";
+              }
             }}
           >
-            Save & Publish
+            {isLoading ? "Publishing..." : "Save & Publish"}
           </button>
         </form>
       </div>
