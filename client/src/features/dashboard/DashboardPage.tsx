@@ -2,7 +2,9 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import type { OneShot } from "../stories/types/types";
 import { apiClient } from "../../api/client";
+import { useStories, invalidateStoriesCache } from "../../hooks/useStories";
 import { OneShotCard } from "../stories/components/StoryCard";
+import { ConfirmDialog } from "../../shared/components/ConfirmDialog";
 
 const styles = {
   page: {
@@ -11,7 +13,7 @@ const styles = {
     color: "#ffffff",
   } as React.CSSProperties,
   inner: {
-    maxWidth: "900px",
+    maxWidth: "1100px",
     margin: "0 auto",
     padding: "40px 40px",
   } as React.CSSProperties,
@@ -144,70 +146,83 @@ export const DashboardPage = () => {
     storyId: OneShot;
   }
 
-  const [userWorks, setUserWorks] = useState<OneShot[]>([]);
+  // ✅ useStories replaces the manual stories fetch
+  const currentAuthor = localStorage.getItem("currentAuthor") || "Anonymous";
+  const { data, loading, error } = useStories({ author: currentAuthor });
+  const userWorks = data ?? [];
+
   const [libraryEntries, setLibraryEntries] = useState<LibraryEntry[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [libraryLoading, setLibraryLoading] = useState(true);
+
+  const [deleteStoryId, setDeleteStoryId] = useState<string | null>(null);
+  const [deleteLibId, setDeleteLibId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
   const navigate = useNavigate();
   const location = useLocation();
-  const currentAuthor = localStorage.getItem("currentAuthor") || "Anonymous";
 
   useEffect(() => {
     setActiveTab(location.pathname.endsWith("/library") ? "library" : "works");
   }, [location.pathname]);
 
+  // Library still needs its own fetch since useStories only covers /stories
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchLibrary = async () => {
       try {
-        setLoading(true);
-        const resp = await apiClient.get("/stories");
-        const data = resp.data;
-        const stories: OneShot[] = Array.isArray(data)
-          ? data
-          : (data.stories ?? data.data ?? data.works ?? []);
-        setUserWorks(stories.filter((s) => s.author === currentAuthor));
-
-        try {
-          const libResp = await apiClient.get("/libraries");
-          const libs: LibraryEntry[] = Array.isArray(libResp.data)
-            ? libResp.data
-            : (libResp.data.libraries ?? libResp.data.data ?? []);
-          setLibraryEntries(libs);
-        } catch {
-          setLibraryEntries([]);
-        }
-
-        setError(null);
-      } catch (err: any) {
-        setError(err.response?.data?.message || "Failed to load dashboard");
+        const libResp = await apiClient.get("/libraries");
+        const libs: LibraryEntry[] = Array.isArray(libResp.data)
+          ? libResp.data
+          : (libResp.data.libraries ?? libResp.data.data ?? []);
+        setLibraryEntries(libs);
+      } catch {
+        setLibraryEntries([]);
       } finally {
-        setLoading(false);
+        setLibraryLoading(false);
       }
     };
-    fetchData();
-  }, [currentAuthor]);
+    fetchLibrary();
+  }, []);
 
-  const handleDeleteStory = async (storyId: string) => {
-    if (!window.confirm("Are you sure you want to delete this story?")) return;
+  const handleDeleteStoryConfirmed = async () => {
+    if (!deleteStoryId) return;
     try {
-      await apiClient.delete(`/stories/${storyId}`);
-      setUserWorks((prev) => prev.filter((s) => s._id !== storyId));
+      setDeleteError(null);
+      await apiClient.delete(`/stories/${deleteStoryId}`);
+      invalidateStoriesCache(); // clear cache so hook re-fetches fresh data
+      window.location.reload(); // re-render with updated list
     } catch (err: any) {
-      alert(err.response?.data?.message || "Failed to delete story");
+      const errorMsg =
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        "Failed to delete story. Please try again.";
+      setDeleteError(errorMsg);
+      console.error("Error deleting story:", err);
+    } finally {
+      setDeleteStoryId(null);
     }
   };
 
-  const handleDeleteFromLibrary = async (libId: string) => {
-    if (!window.confirm("Remove this story from your library?")) return;
+  const handleDeleteLibConfirmed = async () => {
+    if (!deleteLibId) return;
     try {
-      await apiClient.delete(`/libraries/${libId}`);
-      setLibraryEntries((prev) => prev.filter((e) => e._id !== libId));
+      setDeleteError(null);
+      await apiClient.delete(`/libraries/${deleteLibId}`);
+      setLibraryEntries((prev) => prev.filter((e) => e._id !== deleteLibId));
     } catch (err: any) {
-      alert(err.response?.data?.message || "Failed to remove");
+      const errorMsg =
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        "Failed to remove from library. Please try again.";
+      setDeleteError(errorMsg);
+      console.error("Error removing from library:", err);
+    } finally {
+      setDeleteLibId(null);
     }
   };
 
-  if (loading)
+  const isLoading = loading || libraryLoading;
+
+  if (isLoading)
     return (
       <div style={styles.page}>
         <div style={styles.inner}>
@@ -219,13 +234,47 @@ export const DashboardPage = () => {
     return (
       <div style={styles.page}>
         <div style={styles.inner}>
-          <p style={{ color: "#ef5350" }}>{error}</p>
+          <p style={{ color: "#ef5350" }}>{error.message}</p>
         </div>
       </div>
     );
 
   return (
     <div style={styles.page}>
+      {/* Error Toast */}
+      {deleteError && (
+        <div className="fixed bottom-4 right-4 bg-red-900/80 border border-red-700 text-red-200 px-4 py-3 rounded-lg text-sm max-w-xs z-50">
+          {deleteError}
+          <button
+            onClick={() => setDeleteError(null)}
+            className="ml-3 text-red-400 hover:text-red-200"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
+      {deleteStoryId && (
+        <ConfirmDialog
+          title="Delete Story"
+          message="Are you sure you want to delete this story? This action cannot be undone."
+          confirmLabel="Delete"
+          isDangerous
+          onConfirm={handleDeleteStoryConfirmed}
+          onCancel={() => setDeleteStoryId(null)}
+        />
+      )}
+      {deleteLibId && (
+        <ConfirmDialog
+          title="Remove from Library"
+          message="Are you sure you want to remove this story from your library?"
+          confirmLabel="Remove"
+          isDangerous
+          onConfirm={handleDeleteLibConfirmed}
+          onCancel={() => setDeleteLibId(null)}
+        />
+      )}
+
       <div style={styles.inner}>
         <div style={styles.header}>
           <h1 style={styles.pageTitle}>Dashboard</h1>
@@ -301,7 +350,7 @@ export const DashboardPage = () => {
                       key={item._id}
                       oneshot={item}
                       isLast={i === userWorks.length - 1}
-                      onRemove={() => handleDeleteStory(item._id)}
+                      onRemove={() => setDeleteStoryId(item._id)}
                     />
                   ))}
                 </div>
@@ -326,7 +375,7 @@ export const DashboardPage = () => {
                       key={entry._id}
                       oneshot={entry.storyId}
                       isLast={i === libraryEntries.length - 1}
-                      onRemove={() => handleDeleteFromLibrary(entry._id)}
+                      onRemove={() => setDeleteLibId(entry._id)}
                     />
                   ))}
                 </div>

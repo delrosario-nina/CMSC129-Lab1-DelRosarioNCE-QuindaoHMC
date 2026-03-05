@@ -12,8 +12,7 @@ import {
   HiX,
 } from "react-icons/hi";
 import { OneShotCard } from "../components/StoryCard";
-import { apiClient } from "../../../api/client";
-import type { OneShot } from "../types/types";
+import { useStories } from "../../../hooks/useStories"; // ✅ replaces apiClient + useState + useEffect
 
 type SortField = "title" | "recently-updated";
 type SortOrder = "asc" | "desc";
@@ -51,13 +50,11 @@ const styles = {
     color: "#ffffff",
   } as React.CSSProperties,
   inner: {
-    maxWidth: "900px",
+    maxWidth: "1100px",
     margin: "0 auto",
     padding: "40px 40px",
   } as React.CSSProperties,
-  section: {
-    marginBottom: "48px",
-  } as React.CSSProperties,
+  section: { marginBottom: "48px" } as React.CSSProperties,
   sectionTitle: {
     fontSize: "18px",
     fontWeight: "700",
@@ -126,12 +123,8 @@ const styles = {
     color: "#d1d5db",
     margin: 0,
   } as React.CSSProperties,
-  filterContent: {
-    padding: "20px",
-  } as React.CSSProperties,
-  filterGroup: {
-    marginBottom: "24px",
-  } as React.CSSProperties,
+  filterContent: { padding: "20px" } as React.CSSProperties,
+  filterGroup: { marginBottom: "24px" } as React.CSSProperties,
   filterGroupTitle: {
     display: "flex",
     alignItems: "center",
@@ -201,7 +194,6 @@ const styles = {
     cursor: "pointer",
     transition: "all 0.15s ease",
   } as React.CSSProperties,
-  // Tag badge styles (like the screenshot)
   tagBadge: {
     display: "inline-flex",
     alignItems: "center",
@@ -234,7 +226,6 @@ const styles = {
     gap: "8px",
     marginBottom: "10px",
   } as React.CSSProperties,
-  // Custom search input
   searchInput: {
     width: "100%",
     padding: "8px 12px",
@@ -330,12 +321,8 @@ const TagAutocompleteInput = ({
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (
-        wrapperRef.current &&
-        !wrapperRef.current.contains(e.target as Node)
-      ) {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node))
         setOpen(false);
-      }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -350,7 +337,6 @@ const TagAutocompleteInput = ({
   return (
     <div>
       <label style={styles.tagInputLabel}>{label}</label>
-      {/* Badges row */}
       {tags.length > 0 && (
         <div style={styles.tagBadgesRow}>
           {tags.map((tag) => (
@@ -358,7 +344,6 @@ const TagAutocompleteInput = ({
           ))}
         </div>
       )}
-      {/* Input with dropdown */}
       <div style={styles.autocompleteWrapper} ref={wrapperRef}>
         <input
           type="text"
@@ -371,9 +356,8 @@ const TagAutocompleteInput = ({
           placeholder={placeholder ?? "Search tags..."}
           style={styles.searchInput}
           onKeyDown={(e) => {
-            if (e.key === "Enter" && suggestions.length > 0) {
+            if (e.key === "Enter" && suggestions.length > 0)
               handleSelect(suggestions[0]);
-            }
             if (e.key === "Escape") setOpen(false);
           }}
         />
@@ -406,9 +390,10 @@ const TagAutocompleteInput = ({
 };
 
 export const BroswingPage = () => {
-  const [allWorks, setAllWorks] = useState<OneShot[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // ✅ 3 lines replace ~20 lines of useState + useEffect + apiClient boilerplate
+  const { data, loading, error } = useStories();
+  const allWorks = data ?? [];
+
   const [sortField, setSortField] = useState<SortField>("recently-updated");
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
   const [currentPage, setCurrentPage] = useState(1);
@@ -419,30 +404,6 @@ export const BroswingPage = () => {
   const [tagFilterMode, setTagFilterMode] = useState<TagFilterMode>("OR");
   const [includeTags, setIncludeTags] = useState<string[]>([]);
   const [excludeTags, setExcludeTags] = useState<string[]>([]);
-
-  // Fetch stories from API
-  useEffect(() => {
-    const fetchStories = async () => {
-      try {
-        setLoading(true);
-        const response = await apiClient.get("/stories");
-        // API might return an array directly, or wrap it in an object
-        const data = response.data;
-        const stories = Array.isArray(data)
-          ? data
-          : (data.stories ?? data.data ?? data.works ?? []);
-        setAllWorks(stories);
-        setError(null);
-      } catch (err: any) {
-        setError(err.response?.data?.message || "Failed to load stories");
-        console.error("Error fetching stories:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchStories();
-  }, []);
 
   const allTags = useMemo(() => {
     const tags = new Set<string>();
@@ -542,7 +503,7 @@ export const BroswingPage = () => {
 
         {error && (
           <div style={{ ...styles.emptyState, padding: "60px 20px" }}>
-            <p style={{ color: "#ef5350" }}>{error}</p>
+            <p style={{ color: "#ef5350" }}>{error.message}</p>
           </div>
         )}
 
@@ -681,7 +642,6 @@ export const BroswingPage = () => {
                     </select>
                     ]
                   </div>
-
                   <div
                     style={{
                       display: "grid",
