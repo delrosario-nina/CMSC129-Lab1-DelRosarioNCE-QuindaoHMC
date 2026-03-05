@@ -1,10 +1,10 @@
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { apiClient } from "../../../api/client";
 import { AddToLibraryButton } from "../../dashboard/library/components/AddToLibraryButton";
+import { MdOutlineModeEditOutline } from "react-icons/md";
 import type { OneShot } from "../types/types";
 
-// --- Styles ---
 const s = {
   page: {
     backgroundColor: "#111111",
@@ -12,12 +12,10 @@ const s = {
     color: "#ffffff",
   } as React.CSSProperties,
   inner: {
-    maxWidth: "900px",
+    maxWidth: "1100px",
     margin: "0 auto",
     padding: "40px 40px",
   } as React.CSSProperties,
-
-  // --- Metadata Box ---
   metaBox: {
     backgroundColor: "#161616",
     border: "1px solid #222222",
@@ -96,14 +94,25 @@ const s = {
     color: "#d1d5db",
     fontWeight: "500",
   } as React.CSSProperties,
-
-  // --- Title block ---
+  titleRow: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: "12px",
+    marginBottom: "6px",
+  } as React.CSSProperties,
+  titleActions: {
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    flexShrink: 0,
+  } as React.CSSProperties,
   title: {
     fontSize: "28px",
     fontWeight: "800",
     color: "#ffffff",
     lineHeight: "1.3",
-    marginBottom: "6px",
+    margin: 0,
   } as React.CSSProperties,
   author: {
     fontSize: "14px",
@@ -115,8 +124,6 @@ const s = {
     textDecoration: "underline",
     cursor: "pointer",
   } as React.CSSProperties,
-
-  // --- Synopsis block ---
   synopsisBox: {
     backgroundColor: "#161616",
     border: "1px solid #222222",
@@ -137,8 +144,6 @@ const s = {
     color: "#d1d5db",
     lineHeight: "1.8",
   } as React.CSSProperties,
-
-  // --- Content block ---
   contentBox: {
     backgroundColor: "#161616",
     border: "1px solid #222222",
@@ -161,7 +166,6 @@ const s = {
   } as React.CSSProperties,
 };
 
-// --- Helper ---
 const MetaRow = ({
   label,
   bold,
@@ -179,9 +183,9 @@ const MetaRow = ({
   </div>
 );
 
-// --- Main Page ---
 export const ReadingPage = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [story, setStory] = useState<OneShot | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -192,7 +196,6 @@ export const ReadingPage = () => {
       setLoading(false);
       return;
     }
-
     const fetchStory = async () => {
       try {
         setLoading(true);
@@ -201,16 +204,14 @@ export const ReadingPage = () => {
         setError(null);
       } catch (err: any) {
         setError(err.response?.data?.message || "Failed to load story");
-        console.error("Error fetching story:", err);
       } finally {
         setLoading(false);
       }
     };
-
     fetchStory();
   }, [id]);
 
-  if (loading) {
+  if (loading)
     return (
       <div style={s.page}>
         <div style={s.inner}>
@@ -218,9 +219,7 @@ export const ReadingPage = () => {
         </div>
       </div>
     );
-  }
-
-  if (error || !story) {
+  if (error || !story)
     return (
       <div style={s.page}>
         <div style={s.inner}>
@@ -228,21 +227,51 @@ export const ReadingPage = () => {
         </div>
       </div>
     );
-  }
+
+  const isAuthor =
+    story.author === (localStorage.getItem("currentAuthor") || "Anonymous");
 
   return (
     <div style={s.page}>
       <div style={s.inner}>
-        {/* Title & Author */}
-        <h1 style={s.title}>{story.title}</h1>
+        {/* Title row — bookmark icon and edit button on the right */}
+        <div style={s.titleRow}>
+          <h1 style={s.title}>{story.title}</h1>
+          <div style={s.titleActions}>
+            <AddToLibraryButton storyId={story._id} />
+            {isAuthor && (
+              <button
+                onClick={() => navigate(`/write/${story._id}`)}
+                style={{
+                  background: "none",
+                  border: "1px solid #333333",
+                  borderRadius: "6px",
+                  color: "#60a5fa",
+                  padding: "6px 10px",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px",
+                  fontSize: "13px",
+                }}
+                onMouseEnter={(e) =>
+                  ((e.currentTarget as HTMLButtonElement).style.borderColor =
+                    "#60a5fa")
+                }
+                onMouseLeave={(e) =>
+                  ((e.currentTarget as HTMLButtonElement).style.borderColor =
+                    "#333333")
+                }
+              >
+                <MdOutlineModeEditOutline size={15} /> Edit
+              </button>
+            )}
+          </div>
+        </div>
+
         <p style={s.author}>
           by <span style={s.authorLink}>{story.author}</span>
         </p>
-
-        {/* Add to Library Button */}
-        <div style={{ marginBottom: "24px" }}>
-          <AddToLibraryButton storyId={story._id} />
-        </div>
 
         {/* Metadata Box */}
         <div style={s.metaBox}>
@@ -289,6 +318,5 @@ export const ReadingPage = () => {
     </div>
   );
 };
-export const BrowsePage = () => {
-  return <ReadingPage />;
-};
+
+export const BrowsePage = () => <ReadingPage />;

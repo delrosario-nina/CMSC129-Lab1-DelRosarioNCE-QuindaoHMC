@@ -12,7 +12,7 @@ const styles = {
     color: "#ffffff",
   } as React.CSSProperties,
   inner: {
-    maxWidth: "900px",
+    maxWidth: "1100px",
     margin: "0 auto",
     padding: "40px 40px",
   } as React.CSSProperties,

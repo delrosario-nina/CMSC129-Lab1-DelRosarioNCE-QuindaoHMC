@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { apiClient } from "../../../api/client";
 import type { WritingFormData } from "../types/types";
+import { validateStoryForm, getWordCount } from "../utils/validation";
 
 // --- Available Genres ---
 const genres = [
@@ -69,7 +70,7 @@ const styles = {
     color: "#ffffff",
   } as React.CSSProperties,
   inner: {
-    maxWidth: "900px",
+    maxWidth: "1200px",
     margin: "0 auto",
     padding: "40px 40px",
   } as React.CSSProperties,
@@ -352,6 +353,7 @@ const TagAutocompleteInput = ({
 // --- Main Component ---
 export const WritePage = () => {
   const navigate = useNavigate();
+  const { id } = useParams<{ id?: string }>();
   const [formData, setFormData] = useState<WritingFormData>({
     title: "",
     synopsis: "",
@@ -362,6 +364,29 @@ export const WritePage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // load existing story if editing
+  useEffect(() => {
+    if (id) {
+      (async () => {
+        try {
+          setIsLoading(true);
+          const resp = await apiClient.get(`/stories/${id}`);
+          const s = resp.data;
+          setFormData({
+            title: s.title || "",
+            synopsis: s.synopsis || "",
+            content: s.content || "",
+            genres: s.genres || [],
+            tags: s.tags || [],
+          });
+        } catch (err) {
+          console.error("Failed to load story for editing", err);
+        } finally {
+          setIsLoading(false);
+        }
+      })();
+    }
+  }, [id]);
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, title: e.target.value });
   };
@@ -400,33 +425,47 @@ export const WritePage = () => {
     e.preventDefault();
     setError(null);
 
-    // Validation
-    if (!formData.title.trim()) {
-      setError("Story title is required");
-      return;
-    }
-    if (!formData.content.trim()) {
-      setError("Story content is required");
+    // Comprehensive validation
+    const validationError = validateStoryForm(formData);
+    if (validationError) {
+      setError(validationError);
       return;
     }
 
     setIsLoading(true);
     try {
       const author = localStorage.getItem("currentAuthor") || "Anonymous";
-      const response = await apiClient.post("/stories", {
-        title: formData.title,
-        author,
-        synopsis: formData.synopsis,
-        content: formData.content,
-        genres: formData.genres,
-        tags: formData.tags,
-      });
+      let response;
+      if (id) {
+        // editing
+        response = await apiClient.put(`/stories/${id}`, {
+          title: formData.title,
+          author,
+          synopsis: formData.synopsis,
+          content: formData.content,
+          genres: formData.genres,
+          tags: formData.tags,
+        });
+      } else {
+        response = await apiClient.post("/stories", {
+          title: formData.title,
+          author,
+          synopsis: formData.synopsis,
+          content: formData.content,
+          genres: formData.genres,
+          tags: formData.tags,
+        });
+      }
 
-      // Redirect to reading page after successful publish
+      // Redirect to reading page after successful publish/edit
       navigate(`/reading/${response.data._id}`);
     } catch (err: any) {
-      setError(err.response?.data?.message || "Failed to publish story");
-      console.error("Error publishing story:", err);
+      const message =
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        "Failed to save story. Please try again.";
+      setError(message);
+      console.error("Error saving story:", err);
     } finally {
       setIsLoading(false);
     }
@@ -546,7 +585,19 @@ export const WritePage = () => {
 
           {/* Content */}
           <div style={styles.formGroup}>
-            <label style={styles.label}>Story Content</label>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <label style={styles.label}>Story Content</label>
+              <span style={{ fontSize: "12px", color: "#6b7280" }}>
+                {formData.content.length.toLocaleString()} / 1,000,000
+                characters
+              </span>
+            </div>
             <textarea
               value={formData.content}
               onChange={handleContentChange}
@@ -565,6 +616,13 @@ export const WritePage = () => {
                   "none";
               }}
             />
+            {formData.content.trim() && (
+              <p
+                style={{ fontSize: "12px", color: "#6b7280", marginTop: "8px" }}
+              >
+                ~{getWordCount(formData.content)} words
+              </p>
+            )}
           </div>
 
           {/* Submit */}

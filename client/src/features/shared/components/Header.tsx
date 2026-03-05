@@ -1,6 +1,13 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
-// import { allWorks } from "../../features/stories/data/mockData"; // removed mock data
+import { useStories } from "../../../hooks/useStories"; // ✅ replaces apiClient fetch
+
+type Suggestion = {
+  _id: string;
+  label: string;
+  sublabel: string;
+  type: "title" | "author";
+};
 
 export const Header = () => {
   const [showMenu, setShowMenu] = useState(false);
@@ -10,7 +17,11 @@ export const Header = () => {
   const searchRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
-  // Close account menu when clicking outside
+  // ✅ replaces useState<Story[]> + useEffect + apiClient.get + console.log
+  const { data } = useStories();
+  const allStories = data ?? [];
+
+  // Close menus on outside click
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
@@ -23,41 +34,68 @@ export const Header = () => {
         setShowDropdown(false);
       }
     };
-
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Autocomplete suggestions: currently disabled until API search is implemented
-  type Suggestion = {
-    _id: string;
-    label: string;
-    sublabel: string;
-    type: "title" | "author";
-  };
-
+  // Build suggestions from fetched stories
   const suggestions: Suggestion[] = useMemo(() => {
-    // would normally query server here
-    return [];
-  }, [searchQuery]);
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return [];
 
-  const handleSelect = (item: { _id: string; label: string; type: string }) => {
+    const results: Suggestion[] = [];
+
+    allStories.forEach((story) => {
+      if (story.title.toLowerCase().includes(q)) {
+        results.push({
+          _id: story._id,
+          label: story.title,
+          sublabel: story.author,
+          type: "title",
+        });
+      }
+    });
+
+    const seenAuthors = new Set<string>();
+    allStories.forEach((story) => {
+      if (
+        story.author.toLowerCase().includes(q) &&
+        !seenAuthors.has(story.author)
+      ) {
+        seenAuthors.add(story.author);
+        results.push({
+          _id: "",
+          label: story.author,
+          sublabel: "Author",
+          type: "author",
+        });
+      }
+    });
+
+    return results.slice(0, 8);
+  }, [searchQuery, allStories]);
+
+  const handleSelect = (item: Suggestion) => {
     setShowDropdown(false);
     setSearchQuery("");
     if (item.type === "title" && item._id) {
-      navigate(`/oneshot/${item._id}`);
+      navigate(`/reading/${item._id}`);
     } else if (item.type === "author") {
       navigate(`/browse?q=${encodeURIComponent(item.label)}`);
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && suggestions.length > 0) {
-      handleSelect(suggestions[0]);
+    if (e.key === "Enter") {
+      if (suggestions.length > 0) {
+        handleSelect(suggestions[0]);
+      } else if (searchQuery.trim()) {
+        navigate(`/browse?q=${encodeURIComponent(searchQuery.trim())}`);
+        setSearchQuery("");
+        setShowDropdown(false);
+      }
     }
-    if (e.key === "Escape") {
-      setShowDropdown(false);
-    }
+    if (e.key === "Escape") setShowDropdown(false);
   };
 
   return (
@@ -70,7 +108,7 @@ export const Header = () => {
     >
       <div
         style={{
-          maxWidth: "900px",
+          maxWidth: "1100px",
           margin: "0 auto",
           padding: "14px 40px",
           display: "flex",
@@ -149,18 +187,6 @@ export const Header = () => {
               alignItems: "center",
             }}
           >
-            {/* Search icon */}
-            <span
-              style={{
-                position: "absolute",
-                left: "14px",
-                color: "#6b7280",
-                fontSize: "13px",
-                pointerEvents: "none",
-                userSelect: "none",
-              }}
-            ></span>
-
             <input
               type="text"
               value={searchQuery}
@@ -172,13 +198,13 @@ export const Header = () => {
                 if (searchQuery) setShowDropdown(true);
               }}
               onKeyDown={handleKeyDown}
-              placeholder="Search titles, genres, authors..."
+              placeholder="Search titles, authors..."
               style={{
                 width: "100%",
                 backgroundColor: "#1e1e1e",
                 border: "1px solid #2e2e2e",
                 borderRadius: "10px",
-                padding: "10px 80px 10px 52px",
+                padding: "10px 16px",
                 fontSize: "14px",
                 color: "#e5e7eb",
                 outline: "none",
@@ -187,9 +213,9 @@ export const Header = () => {
               }}
               onFocusCapture={(e) => {
                 (e.currentTarget as HTMLInputElement).style.borderColor =
-                  "#FFFFFFFF";
+                  "#ffffff";
                 (e.currentTarget as HTMLInputElement).style.boxShadow =
-                  "0 0 0 2px rgba(0, 68, 255, 0.15)";
+                  "0 0 0 2px rgba(0,68,255,0.15)";
               }}
               onBlur={(e) => {
                 (e.currentTarget as HTMLInputElement).style.borderColor =
@@ -198,7 +224,6 @@ export const Header = () => {
               }}
             />
 
-            {/* Dropdown */}
             {showDropdown && suggestions.length > 0 && (
               <div
                 style={{
@@ -216,7 +241,7 @@ export const Header = () => {
               >
                 {suggestions.map((item, i) => (
                   <div
-                    key={`${item.type}-${item.label}-${i}`}
+                    key={`${item.type}-${item._id || item.label}-${i}`}
                     onMouseDown={() => handleSelect(item)}
                     style={{
                       padding: "10px 16px",
@@ -286,15 +311,13 @@ export const Header = () => {
               ((e.currentTarget as HTMLSpanElement).style.color = "#60a5fa")
             }
             onMouseLeave={(e) => {
-              if (!showMenu) {
+              if (!showMenu)
                 (e.currentTarget as HTMLSpanElement).style.color = "#9ca3af";
-              }
             }}
           >
             account_circle
           </span>
 
-          {/* Dropdown Menu */}
           {showMenu && (
             <div
               style={{
@@ -312,14 +335,13 @@ export const Header = () => {
             >
               <div style={{ padding: "12px 0" }}>
                 {[
-                  { label: "Written works", path: "/dashboard" },
-                  { label: "Library", path: "/dashboard" },
-                  { label: "Settings", path: "#" },
+                  { label: "Written Works", path: "/dashboard/written-works" },
+                  { label: "Library", path: "/dashboard/library" },
                 ].map((item) => (
                   <div
                     key={item.label}
                     onClick={() => {
-                      if (item.path !== "#") navigate(item.path);
+                      navigate(item.path);
                       setShowMenu(false);
                     }}
                     style={{

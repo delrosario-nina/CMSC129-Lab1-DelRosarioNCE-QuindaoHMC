@@ -24,6 +24,7 @@ function App() {
           <Route path="dashboard/written-works" element={<DashboardPage />} />
           <Route path="dashboard/library" element={<DashboardPage />} />
           <Route path="write" element={<WritePage />} />
+          <Route path="write/:id" element={<WritePage />} />
           <Route path="reading/:id" element={<ReadingPage />} />
           <Route path="oneshot/:id" element={<ReadingPage />} />
         </Route>

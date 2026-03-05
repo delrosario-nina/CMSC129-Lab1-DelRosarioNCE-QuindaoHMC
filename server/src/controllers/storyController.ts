@@ -8,15 +8,43 @@ const wordCount = (text: string) =>
 const today = () => new Date().toISOString().slice(0, 10);
 
 // --- Public Routes ---
-// GET stories
+// GET stories with optional filtering
 export const listStories = async (
-  _req: Request, 
+  req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
-    const stories = await Story.find({ deletedAt: null }).sort({ updatedAt: -1 }).limit(50).lean();
-    res.json(stories);
+    // Build filter object
+    const filter: any = { deletedAt: null };
+
+    // Optional author filter
+    if (req.query.author) {
+      filter.author = String(req.query.author);
+    }
+
+    // Pagination parameters
+    const limit = Math.min(Number(req.query.limit) || 50, 100); // Max 100
+    const skip = Math.max(Number(req.query.skip) || 0, 0); // Min 0
+
+    // Fetch stories and total count
+    const stories = await Story.find(filter)
+      .sort({ updatedAt: -1 })
+      .limit(limit)
+      .skip(skip)
+      .lean();
+
+    const total = await Story.countDocuments(filter);
+
+    res.json({
+      data: stories,
+      pagination: {
+        total,
+        limit,
+        skip,
+        hasMore: skip + limit < total,
+      },
+    });
   } catch (err) {
     next(new AppError("Failed to fetch stories", 500));
   }
@@ -24,9 +52,9 @@ export const listStories = async (
 
 // GET story by ID
 export const getStory = async (
-  req: Request, 
+  req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const story = await Story.findOne({
@@ -44,16 +72,17 @@ export const getStory = async (
 export const createStory = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { title, author, synopsis, content, genres, tags } = req.body;
-    if (!title || !author) throw new AppError("Title and author are required", 400);
+    if (!title || !author)
+      throw new AppError("Title and author are required", 400);
 
     const story = await Story.create({
       title,
       author,
-      published:   today(),
+      published: today(),
       lastUpdated: today(),
       genres,
       tags,
@@ -72,7 +101,7 @@ export const createStory = async (
 export const updateStory = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     if (req.body.content) {
@@ -83,7 +112,7 @@ export const updateStory = async (
     const story = await Story.findOneAndUpdate(
       { _id: req.params.id, deletedAt: null },
       req.body,
-      { new: true, runValidators: true }
+      { new: true, runValidators: true },
     ).lean();
 
     if (!story) throw new AppError("Story not found", 404);
@@ -97,13 +126,13 @@ export const updateStory = async (
 export const softDeleteStory = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const story = await Story.findOneAndUpdate(
       { _id: req.params.id, deletedAt: null },
       { deletedAt: new Date() },
-      { new: true }
+      { new: true },
     ).lean();
 
     if (!story) throw new AppError("Story not found", 404);
@@ -118,7 +147,7 @@ export const softDeleteStory = async (
 export const listAllStories = async (
   _req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const stories = await Story.find().sort({ updatedAt: -1 }).lean();
@@ -132,10 +161,12 @@ export const listAllStories = async (
 export const listDeletedStories = async (
   _req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
-    const stories = await Story.find({ deletedAt: { $ne: null } }).sort({ deletedAt: -1 }).lean();
+    const stories = await Story.find({ deletedAt: { $ne: null } })
+      .sort({ deletedAt: -1 })
+      .lean();
     res.json(stories);
   } catch (err) {
     next(err);
@@ -146,13 +177,13 @@ export const listDeletedStories = async (
 export const restoreStory = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const story = await Story.findOneAndUpdate(
       { _id: req.params.id, deletedAt: { $ne: null } },
       { deletedAt: null },
-      { new: true }
+      { new: true },
     ).lean();
 
     if (!story) throw new AppError("Story not found or not deleted", 404);
@@ -166,7 +197,7 @@ export const restoreStory = async (
 export const hardDeleteStory = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const story = await Story.findByIdAndDelete(req.params.id).lean();
