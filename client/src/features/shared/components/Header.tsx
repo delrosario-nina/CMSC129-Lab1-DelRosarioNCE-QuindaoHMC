@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext";
 import { useStories } from "../../../hooks/useStories";
+import { theme } from "../../../styles/theme";
 
 type Suggestion = {
   _id: string;
@@ -106,28 +107,28 @@ export const Header = () => {
   return (
     <header
       style={{
-        backgroundColor: "#161616",
-        borderBottom: "1px solid #222222",
-        boxShadow: "0 1px 8px rgba(0,0,0,0.4)",
+        backgroundColor: theme.colors.surface,
+        borderBottom: `1px solid ${theme.colors.border}`,
+        boxShadow: theme.shadows.sm,
       }}
     >
       <div
         style={{
-          maxWidth: "1100px",
+          maxWidth: theme.layout.maxWidth,
           margin: "0 auto",
-          padding: "14px 40px",
+          padding: `${theme.spacing.md} ${theme.layout.padding}`,
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          gap: "24px",
+          gap: theme.spacing["2xl"],
         }}
       >
         <Link
           to="/"
           style={{
-            fontSize: "20px",
-            fontWeight: "800",
-            color: "#ffffff",
+            fontSize: theme.fontSize["2xl"],
+            fontWeight: theme.fontWeight.extrabold,
+            color: theme.colors.text.primary,
             textDecoration: "none",
             letterSpacing: "0.15em",
             textTransform: "uppercase",
@@ -135,10 +136,10 @@ export const Header = () => {
             flexShrink: 0,
           }}
           onMouseEnter={(e) =>
-            ((e.currentTarget as HTMLAnchorElement).style.color = "#60a5fa")
+            ((e.currentTarget as HTMLAnchorElement).style.color = theme.colors.accent.primary)
           }
           onMouseLeave={(e) =>
-            ((e.currentTarget as HTMLAnchorElement).style.color = "#ffffff")
+            ((e.currentTarget as HTMLAnchorElement).style.color = theme.colors.text.primary)
           }
         >
           AO3dupe
@@ -147,17 +148,17 @@ export const Header = () => {
         <Link
           to="/"
           style={{
-            fontSize: "12px",
-            fontWeight: "400",
-            color: "#ffffff",
+            fontSize: theme.fontSize.sm,
+            fontWeight: theme.fontWeight.normal,
+            color: theme.colors.text.primary,
             textDecoration: "none",
             letterSpacing: "0.15em",
           }}
           onMouseEnter={(e) =>
-            ((e.currentTarget as HTMLAnchorElement).style.color = "#60a5fa")
+            ((e.currentTarget as HTMLAnchorElement).style.color = theme.colors.accent.primary)
           }
           onMouseLeave={(e) =>
-            ((e.currentTarget as HTMLAnchorElement).style.color = "#ffffff")
+            ((e.currentTarget as HTMLAnchorElement).style.color = theme.colors.text.primary)
           }
         >
           Home
@@ -166,17 +167,17 @@ export const Header = () => {
         <Link
           to="/browse"
           style={{
-            fontSize: "12px",
-            fontWeight: "400",
-            color: "#ffffff",
+            fontSize: theme.fontSize.sm,
+            fontWeight: theme.fontWeight.normal,
+            color: theme.colors.text.primary,
             textDecoration: "none",
             letterSpacing: "0.15em",
           }}
           onMouseEnter={(e) =>
-            ((e.currentTarget as HTMLAnchorElement).style.color = "#60a5fa")
+            ((e.currentTarget as HTMLAnchorElement).style.color = theme.colors.accent.primary)
           }
           onMouseLeave={(e) =>
-            ((e.currentTarget as HTMLAnchorElement).style.color = "#ffffff")
+            ((e.currentTarget as HTMLAnchorElement).style.color = theme.colors.text.primary)
           }
         >
           Browse
@@ -205,24 +206,24 @@ export const Header = () => {
               style={{
                 width: "100%",
                 backgroundColor: "#1e1e1e",
-                border: "1px solid #2e2e2e",
-                borderRadius: "10px",
-                padding: "10px 16px",
-                fontSize: "14px",
-                color: "#e5e7eb",
+                border: `1px solid ${theme.colors.borderLight}`,
+                borderRadius: theme.borderRadius.lg,
+                padding: `${theme.spacing.sm} ${theme.spacing.lg}`,
+                fontSize: theme.fontSize.md,
+                color: theme.colors.text.secondary,
                 outline: "none",
-                transition: "border-color 0.15s ease, box-shadow 0.15s ease",
+                transition: `border-color ${theme.transitions.fast}, box-shadow ${theme.transitions.fast}`,
                 boxSizing: "border-box",
               }}
               onFocusCapture={(e) => {
                 (e.currentTarget as HTMLInputElement).style.borderColor =
-                  "#ffffff";
+                  theme.colors.text.primary;
                 (e.currentTarget as HTMLInputElement).style.boxShadow =
                   "0 0 0 2px rgba(0,68,255,0.15)";
               }}
               onBlur={(e) => {
                 (e.currentTarget as HTMLInputElement).style.borderColor =
-                  "#2e2e2e";
+                  theme.colors.borderLight;
                 (e.currentTarget as HTMLInputElement).style.boxShadow = "none";
               }}
             />
@@ -231,13 +232,13 @@ export const Header = () => {
               <div
                 style={{
                   position: "absolute",
-                  top: "calc(100% + 6px)",
+                  top: `calc(100% + ${theme.spacing.xs})`,
                   left: 0,
                   right: 0,
                   backgroundColor: "#1a1a1a",
-                  border: "1px solid #333333",
-                  borderRadius: "10px",
-                  boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
+                  border: `1px solid ${theme.colors.borderAccent}`,
+                  borderRadius: theme.borderRadius.lg,
+                  boxShadow: theme.shadows.lg,
                   zIndex: 1000,
                   overflow: "hidden",
                 }}
@@ -247,33 +248,29 @@ export const Header = () => {
                     key={`${item.type}-${item._id || item.label}-${i}`}
                     onMouseDown={() => handleSelect(item)}
                     style={{
-                      padding: "10px 16px",
+                      padding: `${theme.spacing.sm} ${theme.spacing.lg}`,
                       cursor: "pointer",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "space-between",
-                      gap: "12px",
+                      gap: theme.spacing.md,
                       borderBottom:
                         i < suggestions.length - 1
-                          ? "1px solid #222222"
+                          ? `1px solid ${theme.colors.border}`
                           : "none",
-                      transition: "background-color 0.1s ease",
+                      transition: `background-color ${theme.transitions.fast}`,
                     }}
                     onMouseEnter={(e) =>
-                      ((
-                        e.currentTarget as HTMLDivElement
-                      ).style.backgroundColor = "#252525")
+                      ((e.currentTarget as HTMLDivElement).style.backgroundColor = theme.colors.genre.background)
                     }
                     onMouseLeave={(e) =>
-                      ((
-                        e.currentTarget as HTMLDivElement
-                      ).style.backgroundColor = "transparent")
+                      ((e.currentTarget as HTMLDivElement).style.backgroundColor = "transparent")
                     }
                   >
                     <span
                       style={{
-                        fontSize: "13px",
-                        color: item.type === "title" ? "#60a5fa" : "#e5e7eb",
+                        fontSize: theme.fontSize.base,
+                        color: item.type === "title" ? theme.colors.accent.primary : theme.colors.text.secondary,
                         whiteSpace: "nowrap",
                         overflow: "hidden",
                         textOverflow: "ellipsis",
@@ -283,8 +280,8 @@ export const Header = () => {
                     </span>
                     <span
                       style={{
-                        fontSize: "11px",
-                        color: "#6b7280",
+                        fontSize: theme.fontSize.xs,
+                        color: theme.colors.text.muted,
                         flexShrink: 0,
                         whiteSpace: "nowrap",
                       }}
@@ -304,19 +301,19 @@ export const Header = () => {
               <span
                 className="material-symbols-outlined"
                 style={{
-                  color: "#9ca3af",
+                  color: theme.colors.text.dim,
                   fontSize: "28px",
                   cursor: "pointer",
-                  transition: "color 0.15s ease",
+                  transition: `color ${theme.transitions.normal}`,
                   flexShrink: 0,
                 }}
                 onClick={() => setShowMenu(!showMenu)}
                 onMouseEnter={(e) =>
-                  ((e.currentTarget as HTMLSpanElement).style.color = "#60a5fa")
+                  ((e.currentTarget as HTMLSpanElement).style.color = theme.colors.accent.primary)
                 }
                 onMouseLeave={(e) => {
                   if (!showMenu)
-                    (e.currentTarget as HTMLSpanElement).style.color = "#9ca3af";
+                    (e.currentTarget as HTMLSpanElement).style.color = theme.colors.text.dim;
                 }}
               >
                 account_circle
@@ -329,23 +326,23 @@ export const Header = () => {
                     top: "100%",
                     right: "0",
                     backgroundColor: "#1a1a1a",
-                    borderRadius: "8px",
-                    border: "1px solid #333333",
-                    boxShadow: "0 4px 12px rgba(0,0,0,0.6)",
+                    borderRadius: theme.borderRadius.lg,
+                    border: `1px solid ${theme.colors.borderAccent}`,
+                    boxShadow: theme.shadows.md,
                     minWidth: "200px",
-                    marginTop: "8px",
+                    marginTop: theme.spacing.sm,
                     zIndex: 1000,
                   }}
                 >
-                  <div style={{ padding: "12px 16px", borderBottom: "1px solid #333333" }}>
-                    <div style={{ fontSize: "14px", fontWeight: "600", color: "#e5e7eb" }}>
+                  <div style={{ padding: `${theme.spacing.md} ${theme.spacing.lg}`, borderBottom: `1px solid ${theme.colors.borderAccent}` }}>
+                    <div style={{ fontSize: theme.fontSize.md, fontWeight: theme.fontWeight.semibold, color: theme.colors.text.secondary }}>
                       {user?.username}
                     </div>
-                    <div style={{ fontSize: "12px", color: "#6b7280", marginTop: "2px" }}>
+                    <div style={{ fontSize: theme.fontSize.sm, color: theme.colors.text.muted, marginTop: "2px" }}>
                       {user?.email}
                     </div>
                   </div>
-                  <div style={{ padding: "8px 0" }}>
+                  <div style={{ padding: `${theme.spacing.sm} 0` }}>
                     {[
                       { label: "Written Works", path: "/dashboard/written-works" },
                       { label: "Library", path: "/dashboard/library" },
@@ -357,25 +354,21 @@ export const Header = () => {
                           setShowMenu(false);
                         }}
                         style={{
-                          padding: "12px 20px",
-                          color: "#e5e7eb",
+                          padding: `${theme.spacing.md} ${theme.spacing.lg}`,
+                          color: theme.colors.text.secondary,
                           cursor: "pointer",
-                          transition: "background-color 0.15s ease",
-                          fontSize: "14px",
+                          transition: `background-color ${theme.transitions.normal}`,
+                          fontSize: theme.fontSize.md,
                         }}
                         onMouseEnter={(e) => {
-                          (
-                            e.currentTarget as HTMLDivElement
-                          ).style.backgroundColor = "#2a2a2a";
+                          (e.currentTarget as HTMLDivElement).style.backgroundColor = "#2a2a2a";
                           (e.currentTarget as HTMLDivElement).style.color =
-                            "#60a5fa";
+                            theme.colors.accent.primary;
                         }}
                         onMouseLeave={(e) => {
-                          (
-                            e.currentTarget as HTMLDivElement
-                          ).style.backgroundColor = "transparent";
+                          (e.currentTarget as HTMLDivElement).style.backgroundColor = "transparent";
                           (e.currentTarget as HTMLDivElement).style.color =
-                            "#e5e7eb";
+                            theme.colors.text.secondary;
                         }}
                       >
                         {item.label}
@@ -384,21 +377,17 @@ export const Header = () => {
                     <div
                       onClick={handleLogout}
                       style={{
-                        padding: "12px 20px",
-                        color: "#ef4444",
+                        padding: `${theme.spacing.md} ${theme.spacing.lg}`,
+                        color: theme.colors.danger.primary,
                         cursor: "pointer",
-                        transition: "background-color 0.15s ease",
-                        fontSize: "14px",
+                        transition: `background-color ${theme.transitions.normal}`,
+                        fontSize: theme.fontSize.md,
                       }}
                       onMouseEnter={(e) => {
-                        (
-                          e.currentTarget as HTMLDivElement
-                        ).style.backgroundColor = "#2a2a2a";
+                        (e.currentTarget as HTMLDivElement).style.backgroundColor = "#2a2a2a";
                       }}
                       onMouseLeave={(e) => {
-                        (
-                          e.currentTarget as HTMLDivElement
-                        ).style.backgroundColor = "transparent";
+                        (e.currentTarget as HTMLDivElement).style.backgroundColor = "transparent";
                       }}
                     >
                       Sign Out
@@ -408,26 +397,26 @@ export const Header = () => {
               )}
             </>
           ) : (
-            <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+            <div style={{ display: "flex", gap: theme.spacing.md, alignItems: "center" }}>
               <Link
                 to="/login"
                 style={{
-                  fontSize: "13px",
-                  fontWeight: "500",
-                  color: "#e5e7eb",
+                  fontSize: theme.fontSize.base,
+                  fontWeight: theme.fontWeight.medium,
+                  color: theme.colors.text.secondary,
                   textDecoration: "none",
-                  padding: "8px 16px",
-                  borderRadius: "6px",
-                  border: "1px solid #333333",
-                  transition: "all 0.15s ease",
+                  padding: `${theme.spacing.sm} ${theme.spacing.lg}`,
+                  borderRadius: theme.borderRadius.md,
+                  border: `1px solid ${theme.colors.borderAccent}`,
+                  transition: `all ${theme.transitions.normal}`,
                 }}
                 onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLAnchorElement).style.borderColor = "#60a5fa";
-                  (e.currentTarget as HTMLAnchorElement).style.color = "#60a5fa";
+                  (e.currentTarget as HTMLAnchorElement).style.borderColor = theme.colors.accent.primary;
+                  (e.currentTarget as HTMLAnchorElement).style.color = theme.colors.accent.primary;
                 }}
                 onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLAnchorElement).style.borderColor = "#333333";
-                  (e.currentTarget as HTMLAnchorElement).style.color = "#e5e7eb";
+                  (e.currentTarget as HTMLAnchorElement).style.borderColor = theme.colors.borderAccent;
+                  (e.currentTarget as HTMLAnchorElement).style.color = theme.colors.text.secondary;
                 }}
               >
                 Sign In
@@ -435,20 +424,20 @@ export const Header = () => {
               <Link
                 to="/register"
                 style={{
-                  fontSize: "13px",
-                  fontWeight: "500",
-                  color: "#ffffff",
+                  fontSize: theme.fontSize.base,
+                  fontWeight: theme.fontWeight.medium,
+                  color: theme.colors.text.primary,
                   textDecoration: "none",
-                  padding: "8px 16px",
-                  borderRadius: "6px",
-                  backgroundColor: "#346eb6",
-                  transition: "background-color 0.15s ease",
+                  padding: `${theme.spacing.sm} ${theme.spacing.lg}`,
+                  borderRadius: theme.borderRadius.md,
+                  backgroundColor: theme.colors.accent.dark,
+                  transition: `background-color ${theme.transitions.normal}`,
                 }}
                 onMouseEnter={(e) =>
-                  ((e.currentTarget as HTMLAnchorElement).style.backgroundColor = "#60a5fa")
+                  ((e.currentTarget as HTMLAnchorElement).style.backgroundColor = theme.colors.accent.primary)
                 }
                 onMouseLeave={(e) =>
-                  ((e.currentTarget as HTMLAnchorElement).style.backgroundColor = "#346eb6")
+                  ((e.currentTarget as HTMLAnchorElement).style.backgroundColor = theme.colors.accent.dark)
                 }
               >
                 Sign Up

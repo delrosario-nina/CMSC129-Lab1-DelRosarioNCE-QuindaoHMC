@@ -1,6 +1,12 @@
 import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext";
+import { theme } from "../../../styles/theme";
+import {
+  inputStyles,
+  errorStyles,
+  textStyles,
+} from "../../../styles/commonStyles";
 
 interface LoginFormData {
   email: string;
@@ -81,70 +87,61 @@ export const LoginPage = () => {
   return (
     <div
       style={{
-        backgroundColor: "#111111",
+        backgroundColor: theme.colors.background,
         minHeight: "100vh",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        padding: "20px",
+        padding: theme.spacing.lg,
       }}
     >
       <div
         style={{
-          backgroundColor: "#161616",
-          border: "1px solid #222222",
-          borderRadius: "12px",
-          padding: "40px",
+          backgroundColor: theme.colors.surface,
+          border: `1px solid ${theme.colors.border}`,
+          borderRadius: theme.borderRadius.xl,
+          padding: theme.spacing["4xl"],
           width: "100%",
           maxWidth: "400px",
         }}
       >
         <h1
           style={{
-            fontSize: "28px",
-            fontWeight: "800",
-            color: "#ffffff",
+            fontSize: theme.fontSize["3xl"],
+            fontWeight: theme.fontWeight.extrabold,
+            color: theme.colors.text.primary,
             textAlign: "center",
-            marginBottom: "8px",
+            marginBottom: theme.spacing.sm,
           }}
         >
           Welcome Back
         </h1>
         <p
           style={{
-            fontSize: "14px",
-            color: "#6b7280",
+            fontSize: theme.fontSize.md,
+            color: theme.colors.text.muted,
             textAlign: "center",
-            marginBottom: "32px",
+            marginBottom: theme.spacing["2xl"],
           }}
         >
           Sign in to your account
         </p>
 
         {errors.general && (
-          <div
-            style={{
-              backgroundColor: "#7f1d1d",
-              color: "#fecaca",
-              padding: "12px 16px",
-              borderRadius: "8px",
-              marginBottom: "16px",
-              fontSize: "14px",
-            }}
-          >
+          <div style={errorStyles.container}>
             {errors.general}
           </div>
         )}
 
         <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: "20px" }}>
+          <div style={{ marginBottom: theme.spacing.lg }}>
             <label
               style={{
                 display: "block",
-                fontSize: "14px",
-                fontWeight: "600",
-                color: "#d1d5db",
-                marginBottom: "8px",
+                fontSize: theme.fontSize.md,
+                fontWeight: theme.fontWeight.semibold,
+                color: theme.colors.text.secondary,
+                marginBottom: theme.spacing.sm,
               }}
             >
               Email
@@ -156,32 +153,25 @@ export const LoginPage = () => {
               onChange={handleChange}
               placeholder="you@example.com"
               style={{
-                width: "100%",
-                backgroundColor: "#1e1e1e",
-                border: `1px solid ${errors.email ? "#ef4444" : "#2e2e2e"}`,
-                borderRadius: "8px",
-                padding: "12px 14px",
-                fontSize: "14px",
-                color: "#e5e7eb",
-                outline: "none",
-                boxSizing: "border-box",
+                ...inputStyles.base,
+                borderColor: errors.email
+                  ? theme.colors.danger.primary
+                  : theme.colors.borderLight,
               }}
             />
             {errors.email && (
-              <p style={{ color: "#ef4444", fontSize: "12px", marginTop: "4px" }}>
-                {errors.email}
-              </p>
+              <p style={errorStyles.text}>{errors.email}</p>
             )}
           </div>
 
-          <div style={{ marginBottom: "24px" }}>
+          <div style={{ marginBottom: theme.spacing["2xl"] }}>
             <label
               style={{
                 display: "block",
-                fontSize: "14px",
-                fontWeight: "600",
-                color: "#d1d5db",
-                marginBottom: "8px",
+                fontSize: theme.fontSize.md,
+                fontWeight: theme.fontWeight.semibold,
+                color: theme.colors.text.secondary,
+                marginBottom: theme.spacing.sm,
               }}
             >
               Password
@@ -193,21 +183,14 @@ export const LoginPage = () => {
               onChange={handleChange}
               placeholder="Enter your password"
               style={{
-                width: "100%",
-                backgroundColor: "#1e1e1e",
-                border: `1px solid ${errors.password ? "#ef4444" : "#2e2e2e"}`,
-                borderRadius: "8px",
-                padding: "12px 14px",
-                fontSize: "14px",
-                color: "#e5e7eb",
-                outline: "none",
-                boxSizing: "border-box",
+                ...inputStyles.base,
+                borderColor: errors.password
+                  ? theme.colors.danger.primary
+                  : theme.colors.borderLight,
               }}
             />
             {errors.password && (
-              <p style={{ color: "#ef4444", fontSize: "12px", marginTop: "4px" }}>
-                {errors.password}
-              </p>
+              <p style={errorStyles.text}>{errors.password}</p>
             )}
           </div>
 
@@ -216,15 +199,15 @@ export const LoginPage = () => {
             disabled={isLoading}
             style={{
               width: "100%",
-              backgroundColor: isLoading ? "#2d5a8a" : "#346eb6",
-              color: "#ffffff",
+              backgroundColor: isLoading ? "#2d5a8a" : theme.colors.accent.dark,
+              color: theme.colors.text.primary,
               border: "none",
-              padding: "14px 24px",
-              borderRadius: "8px",
-              fontSize: "14px",
-              fontWeight: "600",
+              padding: `${theme.spacing.md} ${theme.spacing["2xl"]}`,
+              borderRadius: theme.borderRadius.lg,
+              fontSize: theme.fontSize.md,
+              fontWeight: theme.fontWeight.semibold,
               cursor: isLoading ? "not-allowed" : "pointer",
-              transition: "background-color 0.15s ease",
+              transition: `background-color ${theme.transitions.normal}`,
             }}
           >
             {isLoading ? "Signing in..." : "Sign In"}
@@ -234,18 +217,18 @@ export const LoginPage = () => {
         <p
           style={{
             textAlign: "center",
-            marginTop: "24px",
-            fontSize: "14px",
-            color: "#6b7280",
+            marginTop: theme.spacing["2xl"],
+            fontSize: theme.fontSize.md,
+            color: theme.colors.text.muted,
           }}
         >
           Don't have an account?{" "}
           <Link
             to="/register"
             style={{
-              color: "#60a5fa",
+              color: theme.colors.accent.primary,
               textDecoration: "none",
-              fontWeight: "600",
+              fontWeight: theme.fontWeight.semibold,
             }}
           >
             Sign up
