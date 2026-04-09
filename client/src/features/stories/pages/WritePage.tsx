@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { apiClient } from "../../../api/client";
+import apiClient from "../../../api/client";
 import type { WritingFormData } from "../types/types";
 import { validateStoryForm, getWordCount } from "../utils/validation";
 
@@ -434,13 +434,10 @@ export const WritePage = () => {
 
     setIsLoading(true);
     try {
-      const author = localStorage.getItem("currentAuthor") || "Anonymous";
       let response;
       if (id) {
-        // editing
         response = await apiClient.put(`/stories/${id}`, {
           title: formData.title,
-          author,
           synopsis: formData.synopsis,
           content: formData.content,
           genres: formData.genres,
@@ -449,7 +446,6 @@ export const WritePage = () => {
       } else {
         response = await apiClient.post("/stories", {
           title: formData.title,
-          author,
           synopsis: formData.synopsis,
           content: formData.content,
           genres: formData.genres,
@@ -457,11 +453,11 @@ export const WritePage = () => {
         });
       }
 
-      // Redirect to reading page after successful publish/edit
       navigate(`/reading/${response.data._id}`);
     } catch (err: any) {
       const message =
         err.response?.data?.message ||
+        err.response?.data?.errors?.[0]?.message ||
         err.response?.data?.error ||
         "Failed to save story. Please try again.";
       setError(message);

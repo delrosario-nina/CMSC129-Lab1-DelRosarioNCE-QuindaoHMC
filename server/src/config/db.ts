@@ -1,22 +1,18 @@
 import mongoose, { Connection, Model } from "mongoose";
 import { StorySchema } from "../models/story";
 import { LibrarySchema } from "../models/library";
+import { UserSchema } from "../models/user";
 
 export let primaryDB: Connection;
 export let backupDB: Connection;
 
-// Models - initialized after connections are established
 export let Story: Model<any>;
 export let Library: Model<any>;
+export let User: Model<any>;
 
-// Backup connection models (may be undefined if you never use them)
 export let BackupStory: Model<any>;
 export let BackupLibrary: Model<any>;
 
-/**
- * Utility for callers that want to operate against the backup database.
- * `connectDB` will initialise these when the connection succeeds.
- */
 export const getBackupModels = () => ({
   Story: BackupStory,
   Library: BackupLibrary,
@@ -51,9 +47,9 @@ export const connectDB = async () => {
     // Initialize models on primary connection
     Story = primaryDB.model("Story", StorySchema);
     Library = primaryDB.model("Library", LibrarySchema);
+    User = primaryDB.model("User", UserSchema);
 
     // Also register schemas on the backup connection so they can be used if needed
-    // (backupDB can be undefined until this point, but we're inside try after connection)
     BackupStory = backupDB.model("Story", StorySchema);
     BackupLibrary = backupDB.model("Library", LibrarySchema);
   } catch (error) {

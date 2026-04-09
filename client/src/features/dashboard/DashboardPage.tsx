@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import type { OneShot } from "../stories/types/types";
-import { apiClient } from "../../api/client";
+import apiClient from "../../api/client";
 import { useStories, invalidateStoriesCache } from "../../hooks/useStories";
 import { OneShotCard } from "../stories/components/StoryCard";
 import { ConfirmDialog } from "../../shared/components/ConfirmDialog";
+import { useAuth } from "../../context/AuthContext";
 
 const styles = {
   page: {
@@ -140,14 +141,14 @@ const EmptyState = ({
 
 export const DashboardPage = () => {
   const [activeTab, setActiveTab] = useState<"works" | "library">("works");
+  const { user } = useAuth();
 
   interface LibraryEntry {
     _id: string;
     storyId: OneShot;
   }
 
-  // ✅ useStories replaces the manual stories fetch
-  const currentAuthor = localStorage.getItem("currentAuthor") || "Anonymous";
+  const currentAuthor = user?.username || "";
   const { data, loading, error } = useStories({ author: currentAuthor });
   const userWorks = data ?? [];
 

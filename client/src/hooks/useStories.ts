@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { apiClient } from "../api/client";
+import apiClient from "../api/client";
 import type { OneShot } from "../features/stories/types/types";
 
 interface FetchState<T> {

@@ -1,9 +1,10 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { apiClient } from "../../../api/client";
+import apiClient from "../../../api/client";
 import { AddToLibraryButton } from "../../dashboard/library/components/AddToLibraryButton";
 import { MdOutlineModeEditOutline } from "react-icons/md";
 import type { OneShot } from "../types/types";
+import { useAuth } from "../../../context/AuthContext";
 
 const s = {
   page: {
@@ -228,8 +229,8 @@ export const ReadingPage = () => {
       </div>
     );
 
-  const isAuthor =
-    story.author === (localStorage.getItem("currentAuthor") || "Anonymous");
+  const { user } = useAuth();
+  const isAuthor = user?.username === story.author;
 
   return (
     <div style={s.page}>

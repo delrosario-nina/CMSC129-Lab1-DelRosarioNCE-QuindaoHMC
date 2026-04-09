@@ -2,9 +2,9 @@ import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import type { OneShot } from "../types/types";
 import { OneShotCard } from "../components/StoryCard";
-import { apiClient } from "../../../api/client"; // adjust path to client module
+import apiClient from "../../../api/client";
+import { useAuth } from "../../../context/AuthContext";
 
-// --- Styles ---
 const styles = {
   page: {
     backgroundColor: "#111111",
@@ -42,9 +42,20 @@ const styles = {
     borderRadius: "12px",
     overflow: "hidden",
   } as React.CSSProperties,
+  authPrompt: {
+    backgroundColor: "#161616",
+    border: "1px solid #222222",
+    borderRadius: "12px",
+    padding: "24px",
+    textAlign: "center" as const,
+  } as React.CSSProperties,
+  authPromptText: {
+    fontSize: "14px",
+    color: "#9ca3af",
+    marginBottom: "16px",
+  } as React.CSSProperties,
 };
 
-// --- Section wrapper ---
 const Section = ({ title, novels }: { title: string; novels: OneShot[] }) => {
   const browseLink = title === "Library" ? "/dashboard/library" : "/browse";
   return (
@@ -68,12 +79,13 @@ const Section = ({ title, novels }: { title: string; novels: OneShot[] }) => {
   );
 };
 
-// --- Main Export ---
 export const HomeSections = () => {
+  const { isAuthenticated } = useAuth();
   const [library, setLibrary] = useState<OneShot[]>([]);
   const [recentlyUpdated, setRecentlyUpdated] = useState<OneShot[]>([]);
   const [allWorks, setAllWorks] = useState<OneShot[]>([]);
   const [loading, setLoading] = useState(true);
+  const [libraryLoading, setLibraryLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -96,18 +108,6 @@ export const HomeSections = () => {
             .slice(0, 5),
         );
 
-        // fetch library entries if available
-        try {
-          const libResp = await apiClient.get("/libraries");
-          const libs = Array.isArray(libResp.data)
-            ? libResp.data
-            : (libResp.data.libraries ?? libResp.data.data ?? []);
-          setLibrary(libs.map((e: any) => e.storyId));
-        } catch (libErr) {
-          // ignore library errors; user might not have any or be anonymous
-          console.warn("Library fetch failed", libErr);
-        }
-
         setError(null);
       } catch (err: any) {
         setError(err.response?.data?.message || "Failed to load homepage");
@@ -118,6 +118,30 @@ export const HomeSections = () => {
     };
     fetchData();
   }, []);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setLibrary([]);
+      return;
+    }
+
+    const fetchLibrary = async () => {
+      try {
+        setLibraryLoading(true);
+        const libResp = await apiClient.get("/libraries");
+        const libs = Array.isArray(libResp.data)
+          ? libResp.data
+          : (libResp.data.libraries ?? libResp.data.data ?? []);
+        setLibrary(libs.map((e: any) => e.storyId));
+      } catch (libErr) {
+        console.warn("Library fetch failed", libErr);
+        setLibrary([]);
+      } finally {
+        setLibraryLoading(false);
+      }
+    };
+    fetchLibrary();
+  }, [isAuthenticated]);
 
   if (loading) {
     return (
@@ -142,7 +166,47 @@ export const HomeSections = () => {
   return (
     <div style={styles.page}>
       <div style={styles.inner}>
-        <Section title="Library" novels={library} />
+        {isAuthenticated ? (
+          libraryLoading ? (
+            <section style={styles.section}>
+              <div style={styles.sectionHeader}>
+                <h2 style={styles.sectionTitle}>Library</h2>
+              </div>
+              <div style={styles.authPrompt}>
+                <p style={{ color: "#6b7280" }}>Loading your library...</p>
+              </div>
+            </section>
+          ) : (
+            <Section title="Library" novels={library} />
+          )
+        ) : (
+          <section style={styles.section}>
+            <div style={styles.sectionHeader}>
+              <h2 style={styles.sectionTitle}>Library</h2>
+            </div>
+            <div style={styles.authPrompt}>
+              <p style={styles.authPromptText}>
+                Sign in to bookmark stories and build your personal library
+              </p>
+              <Link
+                to="/login"
+                style={{
+                  display: "inline-block",
+                  backgroundColor: "#346eb6",
+                  color: "#ffffff",
+                  padding: "10px 24px",
+                  borderRadius: "8px",
+                  fontSize: "14px",
+                  fontWeight: "600",
+                  textDecoration: "none",
+                  transition: "background-color 0.15s ease",
+                }}
+              >
+                Sign In
+              </Link>
+            </div>
+          </section>
+        )}
         <Section title="Recently Updated" novels={recentlyUpdated} />
         <Section title="All Works" novels={allWorks} />
       </div>

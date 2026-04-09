@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useStories } from "../../../hooks/useStories"; // ✅ replaces apiClient fetch
+import { useAuth } from "../../../context/AuthContext";
+import { useStories } from "../../../hooks/useStories";
 
 type Suggestion = {
   _id: string;
@@ -16,12 +17,11 @@ export const Header = () => {
   const menuRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+  const { user, isAuthenticated, logout } = useAuth();
 
-  // ✅ replaces useState<Story[]> + useEffect + apiClient.get + console.log
   const { data } = useStories();
   const allStories = data ?? [];
 
-  // Close menus on outside click
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
@@ -38,7 +38,6 @@ export const Header = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Build suggestions from fetched stories
   const suggestions: Suggestion[] = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     if (!q) return [];
@@ -98,6 +97,12 @@ export const Header = () => {
     if (e.key === "Escape") setShowDropdown(false);
   };
 
+  const handleLogout = () => {
+    logout();
+    setShowMenu(false);
+    navigate("/");
+  };
+
   return (
     <header
       style={{
@@ -117,7 +122,6 @@ export const Header = () => {
           gap: "24px",
         }}
       >
-        {/* Logo */}
         <Link
           to="/"
           style={{
@@ -178,7 +182,6 @@ export const Header = () => {
           Browse
         </Link>
 
-        {/* Search Bar */}
         <div style={{ flex: 1, maxWidth: "520px" }} ref={searchRef}>
           <div
             style={{
@@ -295,81 +298,161 @@ export const Header = () => {
           </div>
         </div>
 
-        {/* Account Icon */}
         <div style={{ position: "relative" }} ref={menuRef}>
-          <span
-            className="material-symbols-outlined"
-            style={{
-              color: "#9ca3af",
-              fontSize: "28px",
-              cursor: "pointer",
-              transition: "color 0.15s ease",
-              flexShrink: 0,
-            }}
-            onClick={() => setShowMenu(!showMenu)}
-            onMouseEnter={(e) =>
-              ((e.currentTarget as HTMLSpanElement).style.color = "#60a5fa")
-            }
-            onMouseLeave={(e) => {
-              if (!showMenu)
-                (e.currentTarget as HTMLSpanElement).style.color = "#9ca3af";
-            }}
-          >
-            account_circle
-          </span>
+          {isAuthenticated ? (
+            <>
+              <span
+                className="material-symbols-outlined"
+                style={{
+                  color: "#9ca3af",
+                  fontSize: "28px",
+                  cursor: "pointer",
+                  transition: "color 0.15s ease",
+                  flexShrink: 0,
+                }}
+                onClick={() => setShowMenu(!showMenu)}
+                onMouseEnter={(e) =>
+                  ((e.currentTarget as HTMLSpanElement).style.color = "#60a5fa")
+                }
+                onMouseLeave={(e) => {
+                  if (!showMenu)
+                    (e.currentTarget as HTMLSpanElement).style.color = "#9ca3af";
+                }}
+              >
+                account_circle
+              </span>
 
-          {showMenu && (
-            <div
-              style={{
-                position: "absolute",
-                top: "100%",
-                right: "0",
-                backgroundColor: "#1a1a1a",
-                borderRadius: "8px",
-                border: "1px solid #333333",
-                boxShadow: "0 4px 12px rgba(0,0,0,0.6)",
-                minWidth: "200px",
-                marginTop: "8px",
-                zIndex: 1000,
-              }}
-            >
-              <div style={{ padding: "12px 0" }}>
-                {[
-                  { label: "Written Works", path: "/dashboard/written-works" },
-                  { label: "Library", path: "/dashboard/library" },
-                ].map((item) => (
-                  <div
-                    key={item.label}
-                    onClick={() => {
-                      navigate(item.path);
-                      setShowMenu(false);
-                    }}
-                    style={{
-                      padding: "12px 20px",
-                      color: "#e5e7eb",
-                      cursor: "pointer",
-                      transition: "background-color 0.15s ease",
-                      fontSize: "14px",
-                    }}
-                    onMouseEnter={(e) => {
-                      (
-                        e.currentTarget as HTMLDivElement
-                      ).style.backgroundColor = "#2a2a2a";
-                      (e.currentTarget as HTMLDivElement).style.color =
-                        "#60a5fa";
-                    }}
-                    onMouseLeave={(e) => {
-                      (
-                        e.currentTarget as HTMLDivElement
-                      ).style.backgroundColor = "transparent";
-                      (e.currentTarget as HTMLDivElement).style.color =
-                        "#e5e7eb";
-                    }}
-                  >
-                    {item.label}
+              {showMenu && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "100%",
+                    right: "0",
+                    backgroundColor: "#1a1a1a",
+                    borderRadius: "8px",
+                    border: "1px solid #333333",
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.6)",
+                    minWidth: "200px",
+                    marginTop: "8px",
+                    zIndex: 1000,
+                  }}
+                >
+                  <div style={{ padding: "12px 16px", borderBottom: "1px solid #333333" }}>
+                    <div style={{ fontSize: "14px", fontWeight: "600", color: "#e5e7eb" }}>
+                      {user?.username}
+                    </div>
+                    <div style={{ fontSize: "12px", color: "#6b7280", marginTop: "2px" }}>
+                      {user?.email}
+                    </div>
                   </div>
-                ))}
-              </div>
+                  <div style={{ padding: "8px 0" }}>
+                    {[
+                      { label: "Written Works", path: "/dashboard/written-works" },
+                      { label: "Library", path: "/dashboard/library" },
+                    ].map((item) => (
+                      <div
+                        key={item.label}
+                        onClick={() => {
+                          navigate(item.path);
+                          setShowMenu(false);
+                        }}
+                        style={{
+                          padding: "12px 20px",
+                          color: "#e5e7eb",
+                          cursor: "pointer",
+                          transition: "background-color 0.15s ease",
+                          fontSize: "14px",
+                        }}
+                        onMouseEnter={(e) => {
+                          (
+                            e.currentTarget as HTMLDivElement
+                          ).style.backgroundColor = "#2a2a2a";
+                          (e.currentTarget as HTMLDivElement).style.color =
+                            "#60a5fa";
+                        }}
+                        onMouseLeave={(e) => {
+                          (
+                            e.currentTarget as HTMLDivElement
+                          ).style.backgroundColor = "transparent";
+                          (e.currentTarget as HTMLDivElement).style.color =
+                            "#e5e7eb";
+                        }}
+                      >
+                        {item.label}
+                      </div>
+                    ))}
+                    <div
+                      onClick={handleLogout}
+                      style={{
+                        padding: "12px 20px",
+                        color: "#ef4444",
+                        cursor: "pointer",
+                        transition: "background-color 0.15s ease",
+                        fontSize: "14px",
+                      }}
+                      onMouseEnter={(e) => {
+                        (
+                          e.currentTarget as HTMLDivElement
+                        ).style.backgroundColor = "#2a2a2a";
+                      }}
+                      onMouseLeave={(e) => {
+                        (
+                          e.currentTarget as HTMLDivElement
+                        ).style.backgroundColor = "transparent";
+                      }}
+                    >
+                      Sign Out
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+              <Link
+                to="/login"
+                style={{
+                  fontSize: "13px",
+                  fontWeight: "500",
+                  color: "#e5e7eb",
+                  textDecoration: "none",
+                  padding: "8px 16px",
+                  borderRadius: "6px",
+                  border: "1px solid #333333",
+                  transition: "all 0.15s ease",
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLAnchorElement).style.borderColor = "#60a5fa";
+                  (e.currentTarget as HTMLAnchorElement).style.color = "#60a5fa";
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLAnchorElement).style.borderColor = "#333333";
+                  (e.currentTarget as HTMLAnchorElement).style.color = "#e5e7eb";
+                }}
+              >
+                Sign In
+              </Link>
+              <Link
+                to="/register"
+                style={{
+                  fontSize: "13px",
+                  fontWeight: "500",
+                  color: "#ffffff",
+                  textDecoration: "none",
+                  padding: "8px 16px",
+                  borderRadius: "6px",
+                  backgroundColor: "#346eb6",
+                  transition: "background-color 0.15s ease",
+                }}
+                onMouseEnter={(e) =>
+                  ((e.currentTarget as HTMLAnchorElement).style.backgroundColor = "#60a5fa")
+                }
+                onMouseLeave={(e) =>
+                  ((e.currentTarget as HTMLAnchorElement).style.backgroundColor = "#346eb6")
+                }
+              >
+                Sign Up
+              </Link>
             </div>
           )}
         </div>

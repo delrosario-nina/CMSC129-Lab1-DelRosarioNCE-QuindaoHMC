@@ -1,47 +1,104 @@
-import { Request, Response, NextFunction } from "express";
-import { Library } from "../models";
+import { Response, NextFunction } from "express";
+import { Library, Story } from "../models";
 import { AppError } from "../middleware/errorHandler";
+import { AuthRequest } from "../middleware/auth";
+import { validate, addToLibrarySchema } from "../config/validation";
 
-// GET libraries
 export const listLibraries = async (
-  _req: Request,
+  req: AuthRequest,
   res: Response,
   next: NextFunction
 ) => {
   try {
-    const libraries = await Library.find().populate("storyId").lean();
-    res.json(libraries);
+    if (!req.user) {
+      res.status(401).json({ message: "Authentication required to view library" });
+      return;
+    }
+
+    const libraries = await Library.find({ userId: req.user._id })
+      .populate("storyId")
+      .lean();
+
+    const validLibraries = libraries.filter(lib => lib.storyId && !(lib.storyId as any).deletedAt);
+
+    res.json(validLibraries);
   } catch (err) {
     next(err);
   }
 };
 
-// POST libraries
 export const addLibrary = async (
-  req: Request,
+  req: AuthRequest,
   res: Response,
   next: NextFunction
 ) => {
   try {
-    const { storyId } = req.body;
-    if (!storyId) throw new AppError("storyId is required", 400);
+    if (!req.user) {
+      res.status(401).json({ message: "Authentication required to add to library" });
+      return;
+    }
 
-    const library = await Library.create({ storyId });
-    res.status(201).json(library);
+    const validation = validate(addToLibrarySchema, req.body);
+    if (!validation.valid) {
+      res.status(400).json({ 
+        message: "Validation failed",
+        errors: validation.errors 
+      });
+      return;
+    }
+
+    const { storyId } = validation.data!;
+
+    const story = await Story.findOne({ _id: storyId, deletedAt: null });
+    if (!story) {
+      throw new AppError("Story not found", 404);
+    }
+
+    const existingEntry = await Library.findOne({
+      userId: req.user._id,
+      storyId,
+    });
+
+    if (existingEntry) {
+      throw new AppError("Story already in library", 409);
+    }
+
+    const library = await Library.create({
+      userId: req.user._id,
+      storyId,
+    });
+
+    const populatedLibrary = await Library.findById(library._id)
+      .populate("storyId")
+      .lean();
+
+    res.status(201).json(populatedLibrary);
   } catch (err) {
     next(err);
   }
 };
 
-// DELETE libraries
 export const removeLibrary = async (
-  req: Request,
+  req: AuthRequest,
   res: Response,
   next: NextFunction
 ) => {
   try {
-    const library = await Library.findByIdAndDelete(req.params.id).lean();
-    if (!library) throw new AppError("Library not found", 404);
+    if (!req.user) {
+      res.status(401).json({ message: "Authentication required to remove from library" });
+      return;
+    }
+
+    const library = await Library.findOne({
+      _id: req.params.id,
+      userId: req.user._id,
+    }).lean();
+
+    if (!library) {
+      throw new AppError("Library entry not found", 404);
+    }
+
+    await Library.findByIdAndDelete(req.params.id);
     res.status(204).send();
   } catch (err) {
     next(err);

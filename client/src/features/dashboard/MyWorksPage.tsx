@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { apiClient } from "../../api/client";
+import apiClient from "../../api/client";
 import { useStories, invalidateStoriesCache } from "../../hooks/useStories"; // ✅
 import type { OneShot } from "../stories/types/types";
 
