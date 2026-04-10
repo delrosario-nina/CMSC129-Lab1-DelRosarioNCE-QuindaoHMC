@@ -95,6 +95,11 @@ export const LoginPage = () => {
         padding: theme.spacing.lg,
       }}
     >
+      <style>{`
+        @media (max-width: 480px) {
+          .login-card { padding: 24px 16px !important; }
+        }
+      `}</style>
       <div
         style={{
           backgroundColor: theme.colors.surface,
@@ -104,6 +109,7 @@ export const LoginPage = () => {
           width: "100%",
           maxWidth: "400px",
         }}
+        className="login-card"
       >
         <h1
           style={{

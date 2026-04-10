@@ -469,7 +469,13 @@ export const WritePage = () => {
 
   return (
     <div style={styles.page}>
-      <div style={styles.inner}>
+      <style>{`
+        @media (max-width: 768px) {
+          .write-inner { padding: 16px 16px !important; }
+          .write-content { min-height: 250px !important; }
+        }
+      `}</style>
+      <div style={styles.inner} className="write-inner">
         <h1 style={styles.pageTitle}>Write a New Story</h1>
 
         {error && (

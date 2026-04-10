@@ -110,6 +110,11 @@ export const RegisterPage = () => {
         padding: "20px",
       }}
     >
+      <style>{`
+        @media (max-width: 480px) {
+          .register-card { padding: 24px 16px !important; }
+        }
+      `}</style>
       <div
         style={{
           backgroundColor: "#161616",
@@ -119,6 +124,7 @@ export const RegisterPage = () => {
           width: "100%",
           maxWidth: "400px",
         }}
+        className="register-card"
       >
         <h1
           style={{

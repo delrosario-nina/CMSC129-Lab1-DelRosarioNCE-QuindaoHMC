@@ -88,11 +88,13 @@ const styles = {
     justifyContent: "space-between",
     marginBottom: "24px",
     gap: "16px",
+    flexWrap: "wrap" as const,
   } as React.CSSProperties,
   controlsRight: {
     display: "flex",
     gap: "8px",
     alignItems: "center",
+    flexWrap: "wrap" as const,
   } as React.CSSProperties,
   headerButton: {
     padding: "8px 16px",
@@ -169,6 +171,7 @@ const styles = {
     marginTop: "24px",
     paddingTop: "24px",
     borderTop: "1px solid #222222",
+    flexWrap: "wrap" as const,
   } as React.CSSProperties,
   applyButton: {
     flex: 1,
@@ -181,6 +184,7 @@ const styles = {
     fontWeight: "600",
     cursor: "pointer",
     transition: "all 0.15s ease",
+    minWidth: "120px",
   } as React.CSSProperties,
   resetButton: {
     flex: 1,
@@ -193,6 +197,7 @@ const styles = {
     fontWeight: "600",
     cursor: "pointer",
     transition: "all 0.15s ease",
+    minWidth: "120px",
   } as React.CSSProperties,
   tagBadge: {
     display: "inline-flex",
@@ -266,6 +271,11 @@ const styles = {
     cursor: "pointer",
     transition: "background-color 0.1s ease",
     display: "block",
+  } as React.CSSProperties,
+  tagInputGrid: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: "16px",
   } as React.CSSProperties,
 };
 
@@ -494,7 +504,19 @@ export const BroswingPage = () => {
 
   return (
     <div style={styles.page}>
-      <div style={styles.inner}>
+      <style>{`
+        @media (max-width: 768px) {
+          .browse-inner { padding: 16px 16px !important; }
+          .genre-grid { grid-template-columns: repeat(2, 1fr) !important; }
+          .tag-input-grid { grid-template-columns: 1fr !important; }
+          .header-controls { flex-direction: column; align-items: flex-start; }
+          .section-title { font-size: 16px !important; }
+        }
+        @media (max-width: 480px) {
+          .genre-grid { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
+      <div style={styles.inner} className="browse-inner">
         {loading && (
           <div style={{ ...styles.emptyState, padding: "60px 20px" }}>
             <p style={{ color: "#6b7280" }}>Loading stories...</p>
@@ -603,7 +625,7 @@ export const BroswingPage = () => {
                     </select>
                     ]
                   </div>
-                  <div style={styles.genreGrid}>
+                  <div style={styles.genreGrid} className="genre-grid">
                     {GENRES.map((genre) => (
                       <label key={genre} style={styles.genreCheckbox}>
                         <input
@@ -643,11 +665,8 @@ export const BroswingPage = () => {
                     ]
                   </div>
                   <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr 1fr",
-                      gap: "16px",
-                    }}
+                    style={styles.tagInputGrid}
+                    className="tag-input-grid"
                   >
                     <TagAutocompleteInput
                       label="Include..."

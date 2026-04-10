@@ -89,7 +89,15 @@ export const theme = {
   layout: {
     maxWidth: "1100px",
     padding: "40px",
+    mobilePadding: "16px",
   },
 } as const;
+
+export const getResponsivePadding = () => {
+  if (typeof window !== "undefined" && window.innerWidth < 640) {
+    return theme.layout.mobilePadding;
+  }
+  return theme.layout.padding;
+};
 
 export type Theme = typeof theme;

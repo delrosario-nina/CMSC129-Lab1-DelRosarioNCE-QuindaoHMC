@@ -11,6 +11,11 @@ export const pageStyles = {
     margin: "0 auto",
     padding: theme.layout.padding,
   } as React.CSSProperties,
+  innerMobile: {
+    maxWidth: theme.layout.maxWidth,
+    margin: "0 auto",
+    padding: theme.layout.mobilePadding,
+  } as React.CSSProperties,
 };
 
 export const cardStyles = {

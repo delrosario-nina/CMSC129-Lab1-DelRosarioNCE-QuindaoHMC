@@ -15,6 +15,7 @@ export const Header = () => {
   const [showMenu, setShowMenu] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -22,6 +23,11 @@ export const Header = () => {
 
   const { data } = useStories();
   const allStories = data ?? [];
+
+  const navLinks = [
+    { label: "Home", path: "/" },
+    { label: "Browse", path: "/browse" },
+  ];
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -104,6 +110,22 @@ export const Header = () => {
     navigate("/");
   };
 
+  const headerStyles: React.CSSProperties = {
+    maxWidth: theme.layout.maxWidth,
+    margin: "0 auto",
+    padding: `${theme.spacing.md} ${theme.layout.padding}`,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: theme.spacing.lg,
+  };
+
+  const mobileHeaderStyles: React.CSSProperties = {
+    ...headerStyles,
+    padding: `${theme.spacing.md} ${theme.layout.mobilePadding}`,
+    gap: theme.spacing.md,
+  };
+
   return (
     <header
       style={{
@@ -112,21 +134,27 @@ export const Header = () => {
         boxShadow: theme.shadows.sm,
       }}
     >
-      <div
-        style={{
-          maxWidth: theme.layout.maxWidth,
-          margin: "0 auto",
-          padding: `${theme.spacing.md} ${theme.layout.padding}`,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: theme.spacing["2xl"],
-        }}
-      >
+      <style>{`
+        @media (max-width: 768px) {
+          .desktop-nav { display: none !important; }
+          .mobile-menu-btn { display: flex !important; }
+          .header-search { max-width: 100% !important; }
+        }
+        @media (min-width: 769px) {
+          .desktop-nav { display: flex !important; }
+          .mobile-menu-btn { display: none !important; }
+          .mobile-menu { display: none !important; }
+        }
+        @media (max-width: 640px) {
+          .header-auth-btns { display: none !important; }
+        }
+      `}</style>
+
+      <div style={headerStyles}>
         <Link
           to="/"
           style={{
-            fontSize: theme.fontSize["2xl"],
+            fontSize: theme.fontSize.xl,
             fontWeight: theme.fontWeight.extrabold,
             color: theme.colors.text.primary,
             textDecoration: "none",
@@ -145,45 +173,31 @@ export const Header = () => {
           AO3dupe
         </Link>
 
-        <Link
-          to="/"
-          style={{
-            fontSize: theme.fontSize.sm,
-            fontWeight: theme.fontWeight.normal,
-            color: theme.colors.text.primary,
-            textDecoration: "none",
-            letterSpacing: "0.15em",
-          }}
-          onMouseEnter={(e) =>
-            ((e.currentTarget as HTMLAnchorElement).style.color = theme.colors.accent.primary)
-          }
-          onMouseLeave={(e) =>
-            ((e.currentTarget as HTMLAnchorElement).style.color = theme.colors.text.primary)
-          }
-        >
-          Home
-        </Link>
+        <div className="desktop-nav" style={{ display: "flex", gap: theme.spacing.xl, alignItems: "center" }}>
+          {navLinks.map((link) => (
+            <Link
+              key={link.path}
+              to={link.path}
+              style={{
+                fontSize: theme.fontSize.sm,
+                fontWeight: theme.fontWeight.normal,
+                color: theme.colors.text.primary,
+                textDecoration: "none",
+                letterSpacing: "0.15em",
+              }}
+              onMouseEnter={(e) =>
+                ((e.currentTarget as HTMLAnchorElement).style.color = theme.colors.accent.primary)
+              }
+              onMouseLeave={(e) =>
+                ((e.currentTarget as HTMLAnchorElement).style.color = theme.colors.text.primary)
+              }
+            >
+              {link.label}
+            </Link>
+          ))}
+        </div>
 
-        <Link
-          to="/browse"
-          style={{
-            fontSize: theme.fontSize.sm,
-            fontWeight: theme.fontWeight.normal,
-            color: theme.colors.text.primary,
-            textDecoration: "none",
-            letterSpacing: "0.15em",
-          }}
-          onMouseEnter={(e) =>
-            ((e.currentTarget as HTMLAnchorElement).style.color = theme.colors.accent.primary)
-          }
-          onMouseLeave={(e) =>
-            ((e.currentTarget as HTMLAnchorElement).style.color = theme.colors.text.primary)
-          }
-        >
-          Browse
-        </Link>
-
-        <div style={{ flex: 1, maxWidth: "520px" }} ref={searchRef}>
+        <div className="header-search" style={{ flex: 1, maxWidth: "520px" }} ref={searchRef}>
           <div
             style={{
               position: "relative",
@@ -295,9 +309,9 @@ export const Header = () => {
           </div>
         </div>
 
-        <div style={{ position: "relative" }} ref={menuRef}>
+        <div className="header-auth-btns desktop-nav" style={{ display: "flex", gap: theme.spacing.md, alignItems: "center" }}>
           {isAuthenticated ? (
-            <>
+            <div style={{ position: "relative" }} ref={menuRef}>
               <span
                 className="material-symbols-outlined"
                 style={{
@@ -395,7 +409,7 @@ export const Header = () => {
                   </div>
                 </div>
               )}
-            </>
+            </div>
           ) : (
             <div style={{ display: "flex", gap: theme.spacing.md, alignItems: "center" }}>
               <Link
@@ -445,7 +459,137 @@ export const Header = () => {
             </div>
           )}
         </div>
+
+        <button
+          className="mobile-menu-btn"
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          style={{
+            background: "none",
+            border: "none",
+            color: theme.colors.text.primary,
+            cursor: "pointer",
+            padding: theme.spacing.xs,
+            display: "none",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          {mobileMenuOpen ? (
+            <span style={{ fontSize: "24px" }}>✕</span>
+          ) : (
+            <span style={{ fontSize: "24px" }}>☰</span>
+          )}
+        </button>
       </div>
+
+      {mobileMenuOpen && (
+        <div
+          className="mobile-menu"
+          style={{
+            backgroundColor: theme.colors.surface,
+            borderTop: `1px solid ${theme.colors.border}`,
+            padding: theme.spacing.md,
+          }}
+        >
+          <div style={{ display: "flex", flexDirection: "column", gap: theme.spacing.md }}>
+            {navLinks.map((link) => (
+              <Link
+                key={link.path}
+                to={link.path}
+                onClick={() => setMobileMenuOpen(false)}
+                style={{
+                  fontSize: theme.fontSize.base,
+                  fontWeight: theme.fontWeight.medium,
+                  color: theme.colors.text.primary,
+                  textDecoration: "none",
+                  padding: `${theme.spacing.sm} ${theme.spacing.md}`,
+                  borderRadius: theme.borderRadius.md,
+                }}
+              >
+                {link.label}
+              </Link>
+            ))}
+            <hr style={{ borderColor: theme.colors.border, margin: `${theme.spacing.sm} 0` }} />
+            {isAuthenticated ? (
+              <>
+                <div style={{ fontSize: theme.fontSize.sm, color: theme.colors.text.secondary, padding: `${theme.spacing.xs} ${theme.spacing.md}` }}>
+                  {user?.username}
+                </div>
+                {[
+                  { label: "Written Works", path: "/dashboard/written-works" },
+                  { label: "Library", path: "/dashboard/library" },
+                ].map((item) => (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    onClick={() => setMobileMenuOpen(false)}
+                    style={{
+                      fontSize: theme.fontSize.base,
+                      color: theme.colors.text.secondary,
+                      textDecoration: "none",
+                      padding: `${theme.spacing.sm} ${theme.spacing.md}`,
+                    }}
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+                <button
+                  onClick={() => {
+                    handleLogout();
+                    setMobileMenuOpen(false);
+                  }}
+                  style={{
+                    fontSize: theme.fontSize.base,
+                    color: theme.colors.danger.primary,
+                    background: "none",
+                    border: "none",
+                    padding: `${theme.spacing.sm} ${theme.spacing.md}`,
+                    textAlign: "left",
+                    cursor: "pointer",
+                  }}
+                >
+                  Sign Out
+                </button>
+              </>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: theme.spacing.sm }}>
+                <Link
+                  to="/login"
+                  onClick={() => setMobileMenuOpen(false)}
+                  style={{
+                    fontSize: theme.fontSize.base,
+                    fontWeight: theme.fontWeight.medium,
+                    color: theme.colors.text.secondary,
+                    textDecoration: "none",
+                    padding: `${theme.spacing.sm} ${theme.spacing.md}`,
+                    borderRadius: theme.borderRadius.md,
+                    border: `1px solid ${theme.colors.borderAccent}`,
+                    textAlign: "center",
+                  }}
+                >
+                  Sign In
+                </Link>
+                <Link
+                  to="/register"
+                  onClick={() => setMobileMenuOpen(false)}
+                  style={{
+                    fontSize: theme.fontSize.base,
+                    fontWeight: theme.fontWeight.medium,
+                    color: theme.colors.text.primary,
+                    textDecoration: "none",
+                    padding: `${theme.spacing.sm} ${theme.spacing.md}`,
+                    borderRadius: theme.borderRadius.md,
+                    backgroundColor: theme.colors.accent.dark,
+                    textAlign: "center",
+                  }}
+                >
+                  Sign Up
+                </Link>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </header>
   );
 };

@@ -31,17 +31,25 @@ const s = {
     paddingTop: "10px",
     borderBottom: "1px solid #1e1e1e",
     alignItems: "flex-start",
+    flexWrap: "wrap" as const,
   } as React.CSSProperties,
   metaRowLast: {
     display: "flex",
     gap: "24px",
     paddingTop: "10px",
     alignItems: "flex-start",
+    flexWrap: "wrap" as const,
   } as React.CSSProperties,
   metaLabel: {
     fontSize: "13px",
     color: "#6b7280",
     minWidth: "120px",
+    flexShrink: 0,
+    paddingTop: "2px",
+  } as React.CSSProperties,
+  metaLabelMobile: {
+    fontSize: "13px",
+    color: "#6b7280",
     flexShrink: 0,
     paddingTop: "2px",
   } as React.CSSProperties,
@@ -178,8 +186,8 @@ const MetaRow = ({
   isLast?: boolean;
   children: React.ReactNode;
 }) => (
-  <div style={isLast ? s.metaRowLast : s.metaRow}>
-    <span style={bold ? s.metaLabelBold : s.metaLabel}>{label}:</span>
+  <div style={isLast ? s.metaRowLast : s.metaRow} className="reading-meta-row">
+    <span style={bold ? s.metaLabelBold : s.metaLabel} className="reading-meta-label">{label}:</span>
     <div style={bold ? s.metaValueBold : s.metaValue}>{children}</div>
   </div>
 );
@@ -234,10 +242,19 @@ export const ReadingPage = () => {
 
   return (
     <div style={s.page}>
-      <div style={s.inner}>
+      <style>{`
+        @media (max-width: 768px) {
+          .reading-inner { padding: 16px 16px !important; }
+          .reading-meta-row { flex-direction: column; gap: 4px; }
+          .reading-meta-label { min-width: auto !important; }
+          .reading-content { padding: 20px 16px !important; }
+          .reading-title { font-size: 22px !important; }
+        }
+      `}</style>
+      <div style={s.inner} className="reading-inner">
         {/* Title row — bookmark icon and edit button on the right */}
         <div style={s.titleRow}>
-          <h1 style={s.title}>{story.title}</h1>
+          <h1 style={s.title} className="reading-title">{story.title}</h1>
           <div style={s.titleActions}>
             <AddToLibraryButton storyId={story._id} />
             {isAuthor && (
@@ -311,7 +328,7 @@ export const ReadingPage = () => {
         )}
 
         {/* Content */}
-        <div style={s.contentBox}>
+        <div style={s.contentBox} className="reading-content">
           <span style={s.contentLabel}>Chapter Content:</span>
           <p style={s.contentText}>{story.content}</p>
         </div>

@@ -242,6 +242,13 @@ export const DashboardPage = () => {
 
   return (
     <div style={styles.page}>
+      <style>{`
+        @media (max-width: 768px) {
+          .dashboard-inner { padding: 16px 16px !important; }
+          .dashboard-header { flex-direction: column; gap: 16px; align-items: flex-start; }
+          .tab-container { overflow-x: auto; width: 100%; }
+        }
+      `}</style>
       {/* Error Toast */}
       {deleteError && (
         <div className="fixed bottom-4 right-4 bg-red-900/80 border border-red-700 text-red-200 px-4 py-3 rounded-lg text-sm max-w-xs z-50">
@@ -276,10 +283,10 @@ export const DashboardPage = () => {
         />
       )}
 
-      <div style={styles.inner}>
-        <div style={styles.header}>
+      <div style={styles.inner} className="dashboard-inner">
+        <div style={styles.header} className="dashboard-header">
           <h1 style={styles.pageTitle}>Dashboard</h1>
-          <div style={styles.tabContainer}>
+          <div style={styles.tabContainer} className="tab-container">
             <button
               style={activeTab === "works" ? styles.tabActive : styles.tab}
               onClick={() => navigate("/dashboard/written-works")}
