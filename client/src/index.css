@@ -1,5 +1,26 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: "Lucide";
+  src: url("./assets/LucidaGrande.woff") format("woff");
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Lucide";
+  src: url("./assets/LucidaGrandeBold.woff") format("woff");
+  font-weight: bold;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Lucide";
+  src: url("./assets/Lucida Grande Bold.woff") format("woff");
+  font-weight: bold;
+  font-style: normal;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -11,13 +32,14 @@ html {
 }
 
 body {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: "Lucide", system-ui, Avenir, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background: #1a1a1a;
 }
 
-h1 {
+h1, h2, h3, h4, h5, h6 {
+  font-family: Georgia, serif;
   font-size: 3.2em;
   line-height: 1.1;
 }
