@@ -38,7 +38,12 @@ body {
   background: #1a1a1a;
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-family: Georgia, serif;
   font-size: 3.2em;
   line-height: 1.1;
