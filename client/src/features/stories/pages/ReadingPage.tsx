@@ -195,6 +195,7 @@ const MetaRow = ({
 export const ReadingPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [story, setStory] = useState<OneShot | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -237,7 +238,6 @@ export const ReadingPage = () => {
       </div>
     );
 
-  const { user } = useAuth();
   const isAuthor = user?.username === story.author;
 
   return (

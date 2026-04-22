@@ -23,6 +23,7 @@ export const listLibraries = async (
 
     res.json(validLibraries);
   } catch (err) {
+    console.error("listLibraries error:", err);
     next(err);
   }
 };
@@ -63,17 +64,22 @@ export const addLibrary = async (
       throw new AppError("Story already in library", 409);
     }
 
-    const library = await Library.create({
+    await Library.create({
       userId: req.user._id,
       storyId,
     });
 
-    const populatedLibrary = await Library.findById(library._id)
-      .populate("storyId")
-      .lean();
+    const library = await Library.findOne({
+      userId: req.user._id,
+      storyId,
+    }).populate("storyId").lean();
 
-    res.status(201).json(populatedLibrary);
-  } catch (err) {
+    res.status(201).json(library);
+  } catch (err: any) {
+    if (err?.code === 11000) {
+      throw new AppError("Story already in library", 409);
+    }
+    console.error("addLibrary error:", err);
     next(err);
   }
 };

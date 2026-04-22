@@ -5,14 +5,26 @@ import {
   hardDeleteStory,
 } from "../controllers/storyController";
 import { requireAdminKey } from "../middleware/adminKey";
+import { Library } from "../models";
 
 const router = Router();
 
-// Every route under /api/v1/admin requires the X-Admin-Key header
 router.use(requireAdminKey);
 
-router.get("/stories/deleted",      listDeletedStories); // view the graveyard
-router.put("/stories/:id/restore",  restoreStory);       // undo a soft delete
-router.delete("/stories/:id",       hardDeleteStory);    // permanent — no undo
+router.get("/stories/deleted",      listDeletedStories);
+router.put("/stories/:id/restore",  restoreStory);
+router.delete("/stories/:id",       hardDeleteStory);
+router.post("/fix-library-index", async (_req, res) => {
+  try {
+    await Library.collection.dropIndex("storyId_1");
+    res.json({ message: "Fixed library index" });
+  } catch (err: any) {
+    if (err?.codeName === "IndexNotFound") {
+      res.json({ message: "Index already correct" });
+    } else {
+      res.status(500).json({ message: err.message });
+    }
+  }
+});
 
 export default router;
